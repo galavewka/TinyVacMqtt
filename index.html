@@ -159,16 +159,12 @@
 </head>
 <body>
    <h1>TinyVac Companion</h1>
-    <div class="header">
-         <input type="text" id="username" placeholder="Username" value = "tinyvacmqtt188">
-        <input type="password" id="password" placeholder="Password" value = "dTxHfUIphsEhINd5">
-        <button id="connect-btn">Connect</button>
-    </div>
-    <div class="alert" id="connection-status">Connected to MQTT Broker</div>
-    <div class="subscribe">
-      <input type="text" id="topics" placeholder="Enter topics (space-separated)"value = "vacAlarms">
-        <button id="subscribe-btn">Subscribe</button>
-    </div>
+    <h1>TinyVac Companion</h1>
+   
+   <div id="connection-status">Connecting to MQTT Broker...</div>
+<div id="subscription-status">Not subscribed</div>
+<div id="subscribed-topics"></div>
+   
     <div class="dashboard">
         <div class="alarms">
             <h2 id="alarms-toggle">Last Alarms ▼</h2>
@@ -178,7 +174,7 @@
             <h2 id="devices-toggle">Active Devices ▼</h2>
             <ul class="device-list" id="active-devices"></ul>
         </div>
-    </div>
+      </div>
     <script>
 let client;
  $(document).ready(function () {

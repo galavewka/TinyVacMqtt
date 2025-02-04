@@ -160,15 +160,10 @@
 <body>
     <h1>TinyVac Companion</h1>
     <div class="header">
-         <input type="text" id="username" placeholder="Username">
-        <input type="password" id="password" placeholder="Password">
-        <button id="connect-btn">Connect</button>
-    </div>
-    <div class="alert" id="connection-status">Connected to MQTT Broker</div>
-    <div class="subscribe">
-      <input type="text" id="topics" placeholder="Enter topics (space-separated)">
-        <button id="subscribe-btn">Subscribe</button>
-    </div>
+        <div id="connection-status">Connecting to MQTT Broker...</div>
+<div id="subscription-status">Not subscribed</div>
+<div id="subscribed-topics"></div>
+
     <div class="dashboard">
         <div class="alarms">
             <h2 id="alarms-toggle">Last Alarms ▼</h2>
@@ -181,36 +176,44 @@
     </div>
     <script>
 
-$(document).ready(function () {
+ $(document).ready(function () {
     // Extract parameters from URL
     const urlParams = new URLSearchParams(window.location.search);
     const username = urlParams.get("username");
     const password = urlParams.get("password");
     const topics = urlParams.get("topics");
 
+    // Auto-connect to MQTT
     if (username && password) {
-        $("#username").val(username);
-        $("#password").val(password);
-
-        // Ensure the page has fully loaded before attempting auto-connect
         setTimeout(() => {
             $("#connect-btn").click();
         }, 500);
     }
 
+    // Auto-subscribe to topics
     if (topics) {
         $("#topics").val(topics.replace(/,/g, " "));
-
         setTimeout(() => {
             $("#subscribe-btn").click();
         }, 1000);
     }
+
+    // Monitor connection status
+    let checkConnection = setInterval(() => {
+        if ($("#status").text().includes("Connected")) {
+            $("#connection-status").text("✅ Connected to MQTT Broker");
+            clearInterval(checkConnection);
+        }
+    }, 500);
+
+    // Monitor subscription status
+    let checkSubscription = setInterval(() => {
+        if ($("#subscribed-topics").text().trim().length > 0) {
+            $("#subscription-status").html(`📌 Subscribed to: ${$("#subscribed-topics").text()}`);
+            clearInterval(checkSubscription);
+        }
+    }, 500);
 });
-
-
-
-
-
         let client;
         let deviceHeartbeats = {};
         

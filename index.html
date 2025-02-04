@@ -7,9 +7,6 @@
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
-
-
-
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #1e3c72, #2a5298);
@@ -20,10 +17,7 @@
             flex-direction: column;
             align-items: center;
         }
-        .header, .subscribe {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .status-box {
             width: 100%;
             max-width: 800px;
             background: rgba(255, 255, 255, 0.2);
@@ -32,38 +26,8 @@
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
             margin-bottom: 20px;
-        }
-        .header input, .subscribe input {
-            padding: 10px;
-            margin-right: 10px;
-            border: none;
-            border-radius: 8px;
-            outline: none;
-        }
-        .header button, .subscribe button {
-            background: #00c853;
-            color: #fff;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background 0.3s;
-        }
-        .header button:hover, .subscribe button:hover {
-            background: #009624;
-        }
-        .alert {
-            display: none;
-            background: #28a745;
-            color: white;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 8px;
-            font-weight: bold;
             text-align: center;
-            width: 100%;
-            max-width: 400px;
+            font-weight: bold;
         }
         .dashboard {
             display: flex;
@@ -113,58 +77,21 @@
         .device-offline {
             background: red;
         }
-.header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    max-width: 800px;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
-    padding: 15px;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    margin-bottom: 20px;
-}
-
-.header input {
-    padding: 10px;
-    width: 100%;
-    margin: 5px 0;
-    border: none;
-    border-radius: 8px;
-    outline: none;
-}
-
-.header button {
-    width: 100%;
-    background: #00c853;
-    color: #fff;
-    border: none;
-    padding: 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background 0.3s;
-    margin-top: 10px;
-}
-
-
-.device-warning {
-    background: yellow !important;
-    color: black !important;
-}
-
+        .device-warning {
+            background: yellow !important;
+            color: black !important;
+        }
     </style>
 </head>
 <body>
-   <h1>TinyVac Companion</h1>
-  
-   
-   <div id="connection-status">Connecting to MQTT Broker...</div>
-<div id="subscription-status">Not subscribed</div>
-<div id="subscribed-topics"></div>
-   
+    <h1>TinyVac Companion</h1>
+    
+    <div class="status-box">
+        <div id="connection-status">Connecting to MQTT Broker...</div>
+        <div id="subscription-status">Not subscribed</div>
+        <div id="subscribed-topics"></div>
+    </div>
+
     <div class="dashboard">
         <div class="alarms">
             <h2 id="alarms-toggle">Last Alarms ▼</h2>
@@ -174,164 +101,121 @@
             <h2 id="devices-toggle">Active Devices ▼</h2>
             <ul class="device-list" id="active-devices"></ul>
         </div>
-      </div>
+    </div>
+
     <script>
-let client;
- $(document).ready(function () {
-    // Extract parameters from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const username = urlParams.get("username");
-    const password = urlParams.get("password");
-    const topics = urlParams.get("topics") ? urlParams.get("topics").split(",") : [];
-
-    // Initialize MQTT client
-  client = mqtt.connect("wss://tinyvacmqtt188.cloud.shiftr.io", {
-        username: username,
-        password: password
-    });
-
-    // Handle MQTT connection
-    client.on("connect", function () {
-        $("#connection-status").text("✅ Connected to MQTT Broker");
-
-        // Subscribe to topics if available
-        if (topics.length > 0) {
-            topics.forEach(topic => {
-                client.subscribe(topic, function (err) {
-                    if (!err) {
-                        $("#subscription-status").text("📌 Subscribed to:");
-                        $("#subscribed-topics").append(`<div>${topic}</div>`);
-                    }
-                });
-            });
-        }
-    });
-
-client.on("message", function (topic, message) {
-    try {
-        const parsedMessage = JSON.parse(message.toString());
-        const deviceName = parsedMessage.deviceName || 'Unknown Device';
-        const type = parsedMessage.type || 'info';
-        const msgContent = parsedMessage.message || 'No message';
-        const batteryLevel = parsedMessage.batteryLevel !== undefined ? parsedMessage.batteryLevel : 'N/A';
-        const status = parsedMessage.status || 'Unknown';
-        const timestamp = getCurrentTime();
-
-        // Handle Heartbeat Packet (Active Devices)
-        if (batteryLevel !== 'N/A' && status !== 'Unknown') {
-            deviceHeartbeats[deviceName] = Date.now();
-            let deviceText = `${deviceName} ${batteryLevel}% | Status: ${status} | Online`;
-
-            let deviceElement = $(`#${deviceName}`);
-
-            // Determine class based on current status
-            let newClass = "device-online"; // Default to green (online)
-            if (status === "Alarm" || status === "Warning") {
-                newClass = "device-warning"; // Set to yellow for warnings
-            }
-
-            if (deviceElement.length) {
-                deviceElement.removeClass("device-offline device-online device-warning")
-                    .addClass(newClass)
-                    .text(deviceText);
-            } else {
-                $("#active-devices").append(
-                    `<li id="${deviceName}" class="${newClass}">${deviceText}</li>`
-                );
-            }
-        }
-
-        // Handle Alarm/Warning Messages
-        if (type === "Alarm" || type === "Warning") {
-            let bgColor = type === "Alarm" ? "red" : "yellow";
-            let textColor = type === "Alarm" ? "white" : "black";
-
-			
-            $("#messages").prepend(
-                `<li style="background: ${bgColor}; color: ${textColor}; padding: 10px; border-radius: 5px; margin-bottom: 5px;">
-                    <b>${deviceName}:</b> ${msgContent} 
-                    <span style="float: right; font-size: 12px; opacity: 0.8;">${timestamp}</span>
-                </li>`
-            );
-
-            // Ensure device turns yellow when alarm is received
-            let deviceElement = $(`#${deviceName}`);
-            if (deviceElement.length) {
-                deviceElement.removeClass("device-online device-offline").addClass("device-warning");
-            }
-        }
-
-    } catch (error) {
-        console.error("Invalid JSON received", message);
-    }
-});
-    });
-        
- $("#subscribe-btn").click(function() {
-            const topics = $("#topics").val().split(" ");
-            topics.forEach(topic => {
-                if (client) client.subscribe(topic.trim());
-            });
-        });
-
-
-        setInterval(() => {
-    const now = Date.now();
-    for (let device in deviceHeartbeats) {
-        if (now - deviceHeartbeats[device] >= 20000) { 
-            let deviceElement = $(`#${device}`);
-            if (deviceElement.length) {
-                deviceElement.removeClass("device-online device-warning device-alarm")
-                    .addClass("device-offline")
-                    .css("color", "white") 
-                    .text(`${device} - Offline`);
-            }
-        }
-    }
-}, 5000);
-
-	 
-    // Handle errors
-    client.on("error", function (err) {
-        console.error("MQTT Error:", err);
-        $("#connection-status").text("❌ Connection Failed");
-    });
-
-    // Handle disconnection
-    client.on("close", function () {
-        $("#connection-status").text("⚠️ Disconnected. Reconnecting...");
-        setTimeout(() => {
-            client.reconnect();
-        }, 3000);
-    });
-});
-      
+        let client;
         let deviceHeartbeats = {};
-        
-        $("#connect-btn").click(function () {
-            const username = $("#username").val();
-            const password = $("#password").val();
-            const brokerUrl = "wss://tinyvacmqtt188.cloud.shiftr.io";
-            
+
+        function getUrlParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        const username = getUrlParam("username");
+        const password = getUrlParam("password");
+        const topics = getUrlParam("topics") ? getUrlParam("topics").split(",") : [];
+
+        const brokerUrl = "wss://tinyvacmqtt188.cloud.shiftr.io";
+
+        function connectMQTT() {
             client = mqtt.connect(brokerUrl, {
                 username: username,
                 password: password
             });
-            
+
             client.on("connect", function () {
-                $("#connection-status").fadeIn(500);
+                $("#connection-status").text("Connected to MQTT Broker").css("color", "lightgreen");
+
+                if (topics.length > 0) {
+                    topics.forEach(topic => client.subscribe(topic));
+                    $("#subscription-status").text("Subscribed to: " + topics.join(", ")).css("color", "lightblue");
+                }
             });
-            
 
-function getCurrentTime() {
-    const now = new Date();
-    return now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
-}
+            client.on("message", function (topic, message) {
+                handleMessage(topic, message.toString());
+            });
 
+            client.on("error", function () {
+                $("#connection-status").text("Connection Failed").css("color", "red");
+            });
+        }
 
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+        }
 
+        function handleMessage(topic, message) {
+            try {
+                const parsedMessage = JSON.parse(message);
+                const deviceName = parsedMessage.deviceName || "Unknown Device";
+                const type = parsedMessage.type || "info";
+                const msgContent = parsedMessage.message || "No message";
+                const batteryLevel = parsedMessage.batteryLevel !== undefined ? parsedMessage.batteryLevel : "N/A";
+                const status = parsedMessage.status || "Unknown";
+                const timestamp = getCurrentTime();
+
+                // Handle Active Devices
+                if (batteryLevel !== "N/A" && status !== "Unknown") {
+                    deviceHeartbeats[deviceName] = Date.now();
+                    let deviceText = `${deviceName} ${batteryLevel}% | Status: ${status} | Online`;
+                    let deviceElement = $(`#${deviceName}`);
+
+                    let newClass = "device-online"; 
+                    if (status === "Alarm" || status === "Warning") {
+                        newClass = "device-warning";
+                    }
+
+                    if (deviceElement.length) {
+                        deviceElement.removeClass("device-offline device-online device-warning")
+                                    .addClass(newClass)
+                                    .text(deviceText);
+                    } else {
+                        $("#active-devices").append(`<li id="${deviceName}" class="${newClass}">${deviceText}</li>`);
+                    }
+                }
+
+                // Handle Alarm/Warning Messages
+                if (type === "Alarm" || type === "Warning") {
+                    let bgColor = type === "Alarm" ? "red" : "yellow";
+                    let textColor = type === "Alarm" ? "white" : "black";
+
+                    $("#messages").prepend(
+                        `<li style="background: ${bgColor}; color: ${textColor}; padding: 10px; border-radius: 5px; margin-bottom: 5px;">
+                            <b>${deviceName}:</b> ${msgContent} 
+                            <span style="float: right; font-size: 12px; opacity: 0.8;">${timestamp}</span>
+                        </li>`
+                    );
+
+                    let deviceElement = $(`#${deviceName}`);
+                    if (deviceElement.length) {
+                        deviceElement.removeClass("device-online device-offline").addClass("device-warning");
+                    }
+                }
+            } catch (error) {
+                console.error("Invalid JSON received", message);
+            }
+        }
+
+        // Check for Offline Devices
+        setInterval(() => {
+            const now = Date.now();
+            for (let device in deviceHeartbeats) {
+                if (now - deviceHeartbeats[device] >= 20000) {
+                    let deviceElement = $(`#${device}`);
+                    if (deviceElement.length) {
+                        deviceElement.removeClass("device-online device-warning")
+                                    .addClass("device-offline")
+                                    .text(`${device} - Offline`);
+                    }
+                }
+            }
+        }, 5000);
+
+        // Auto-connect to MQTT
+        connectMQTT();
     </script>
-
-
 </body>
 </html>

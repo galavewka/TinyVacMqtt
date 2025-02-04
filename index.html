@@ -175,7 +175,7 @@
         </div>
     </div>
     <script>
-
+let client;
  $(document).ready(function () {
     // Extract parameters from URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -184,7 +184,7 @@
     const topics = urlParams.get("topics") ? urlParams.get("topics").split(",") : [];
 
     // Initialize MQTT client
-    const client = mqtt.connect("wss://tinyvacmqtt188.cloud.shiftr.io", {
+  client = mqtt.connect("wss://tinyvacmqtt188.cloud.shiftr.io", {
         username: username,
         password: password
     });
@@ -220,7 +220,7 @@
         }, 3000);
     });
 });
-        let client;
+      
         let deviceHeartbeats = {};
         
         $("#connect-btn").click(function () {

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TinyVac Companion</title>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+
+
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header, .subscribe {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+        .header input, .subscribe input {
+            padding: 10px;
+            margin-right: 10px;
+            border: none;
+            border-radius: 8px;
+            outline: none;
+        }
+        .header button, .subscribe button {
+            background: #00c853;
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        .header button:hover, .subscribe button:hover {
+            background: #009624;
+        }
+        .alert {
+            display: none;
+            background: #28a745;
+            color: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+        }
+        .dashboard {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 1000px;
+        }
+        .alarms, .devices {
+            width: 45%;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .alarms h2, .devices h2 {
+            margin-top: 0;
+            font-size: 20px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .message-list, .device-list {
+            list-style: none;
+            padding: 0;
+            text-align: left;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .message-list li {
+            background: red;
+            color: white;
+            padding: 12px;
+            margin: 6px 0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .device-list li {
+            padding: 12px;
+            margin: 6px 0;
+            border-radius: 6px;
+            font-size: 14px;
+            color: white;
+        }
+        .device-online {
+            background: green;
+        }
+        .device-offline {
+            background: red;
+        }
+.header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 800px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    margin-bottom: 20px;
+}
+
+.header input {
+    padding: 10px;
+    width: 100%;
+    margin: 5px 0;
+    border: none;
+    border-radius: 8px;
+    outline: none;
+}
+
+.header button {
+    width: 100%;
+    background: #00c853;
+    color: #fff;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.3s;
+    margin-top: 10px;
+}
+
+
+.device-warning {
+    background: yellow !important;
+    color: black !important;
+}
+
+    </style>
+</head>
+<body>
+    <h1>TinyVac Companion</h1>
+    <div class="header">
+         <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button id="connect-btn">Connect</button>
+    </div>
+    <div class="alert" id="connection-status">Connected to MQTT Broker</div>
+    <div class="subscribe">
+      <input type="text" id="topics" placeholder="Enter topics (space-separated)>
+        <button id="subscribe-btn">Subscribe</button>
+    </div>
+    <div class="dashboard">
+        <div class="alarms">
+            <h2 id="alarms-toggle">Last Alarms ▼</h2>
+            <ul class="message-list" id="messages"></ul>
+        </div>
+        <div class="devices">
+            <h2 id="devices-toggle">Active Devices ▼</h2>
+            <ul class="device-list" id="active-devices"></ul>
+        </div>
+    </div>
+    <script>
+
+ const urlParams = new URLSearchParams(window.location.search);
+    const username = urlParams.get('username') || "defaultUsername";
+    const password = urlParams.get('password') || "defaultPassword";
+    const topics = urlParams.get('topics') ? urlParams.get('topics').split(',') : ["vacAlarms"];
+
+    document.getElementById("username").value = username;
+    document.getElementById("password").value = password;
+    document.getElementById("topics").value = topics.join(" ");
+
+    $("#connect-btn").click();
+    $("#subscribe-btn").click();
+
+        let client;
+        let deviceHeartbeats = {};
+        
+        $("#connect-btn").click(function () {
+            const username = $("#username").val();
+            const password = $("#password").val();
+            const brokerUrl = "wss://tinyvacmqtt188.cloud.shiftr.io";
+            
+            client = mqtt.connect(brokerUrl, {
+                username: username,
+                password: password
+            });
+            
+            client.on("connect", function () {
+                $("#connection-status").fadeIn(500);
+            });
+            
+
+function getCurrentTime() {
+    const now = new Date();
+    return now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+}
+
+
+                client.on("message", function (topic, message) {
+    try {
+        const parsedMessage = JSON.parse(message.toString());
+        const deviceName = parsedMessage.deviceName || 'Unknown Device';
+        const type = parsedMessage.type || 'info';
+        const msgContent = parsedMessage.message || 'No message';
+        const batteryLevel = parsedMessage.batteryLevel !== undefined ? parsedMessage.batteryLevel : 'N/A';
+        const status = parsedMessage.status || 'Unknown';
+        const timestamp = getCurrentTime();
+
+        // Handle Heartbeat Packet (Active Devices)
+        if (batteryLevel !== 'N/A' && status !== 'Unknown') {
+            deviceHeartbeats[deviceName] = Date.now();
+            let deviceText = `${deviceName} ${batteryLevel}% | Status: ${status} | Online`;
+
+            let deviceElement = $(`#${deviceName}`);
+
+            // Determine class based on current status
+            let newClass = "device-online"; // Default to green (online)
+            if (status === "Alarm" || status === "Warning") {
+                newClass = "device-warning"; // Set to yellow for warnings
+            }
+
+            if (deviceElement.length) {
+                deviceElement.removeClass("device-offline device-online device-warning")
+                    .addClass(newClass)
+                    .text(deviceText);
+            } else {
+                $("#active-devices").append(
+                    `<li id="${deviceName}" class="${newClass}">${deviceText}</li>`
+                );
+            }
+        }
+
+        // Handle Alarm/Warning Messages
+        if (type === "Alarm" || type === "Warning") {
+            let bgColor = type === "Alarm" ? "red" : "yellow";
+            let textColor = type === "Alarm" ? "white" : "black";
+
+			
+            $("#messages").prepend(
+                `<li style="background: ${bgColor}; color: ${textColor}; padding: 10px; border-radius: 5px; margin-bottom: 5px;">
+                    <b>${deviceName}:</b> ${msgContent} 
+                    <span style="float: right; font-size: 12px; opacity: 0.8;">${timestamp}</span>
+                </li>`
+            );
+
+            // Ensure device turns yellow when alarm is received
+            let deviceElement = $(`#${deviceName}`);
+            if (deviceElement.length) {
+                deviceElement.removeClass("device-online device-offline").addClass("device-warning");
+            }
+        }
+
+    } catch (error) {
+        console.error("Invalid JSON received", message);
+    }
+});
+    });
+        
+ $("#subscribe-btn").click(function() {
+            const topics = $("#topics").val().split(" ");
+            topics.forEach(topic => {
+                if (client) client.subscribe(topic.trim());
+            });
+        });
+
+
+        setInterval(() => {
+    const now = Date.now();
+    for (let device in deviceHeartbeats) {
+        if (now - deviceHeartbeats[device] >= 20000) { 
+            let deviceElement = $(`#${device}`);
+            if (deviceElement.length) {
+                deviceElement.removeClass("device-online device-warning device-alarm")
+                    .addClass("device-offline")
+                    .css("color", "white") 
+                    .text(`${device} - Offline`);
+            }
+        }
+    }
+}, 5000);
+    </script>
+
+
+</body>
+</html>

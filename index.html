@@ -181,17 +181,35 @@
     </div>
     <script>
 
- const urlParams = new URLSearchParams(window.location.search);
-    const username = urlParams.get('username') || "defaultUsername";
-    const password = urlParams.get('password') || "defaultPassword";
-    const topics = urlParams.get('topics') ? urlParams.get('topics').split(',') : ["vacAlarms"];
+$(document).ready(function () {
+    // Extract parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const username = urlParams.get("username");
+    const password = urlParams.get("password");
+    const topics = urlParams.get("topics");
 
-    document.getElementById("username").value = username;
-    document.getElementById("password").value = password;
-    document.getElementById("topics").value = topics.join(" ");
+    if (username && password) {
+        $("#username").val(username);
+        $("#password").val(password);
 
-    $("#connect-btn").click();
-    $("#subscribe-btn").click();
+        // Ensure the page has fully loaded before attempting auto-connect
+        setTimeout(() => {
+            $("#connect-btn").click();
+        }, 500);
+    }
+
+    if (topics) {
+        $("#topics").val(topics.replace(/,/g, " "));
+
+        setTimeout(() => {
+            $("#subscribe-btn").click();
+        }, 1000);
+    }
+});
+
+
+
+
 
         let client;
         let deviceHeartbeats = {};

@@ -184,7 +184,7 @@
     const topics = urlParams.get("topics") ? urlParams.get("topics").split(",") : [];
 
     // Initialize MQTT client
-    const client = mqtt.connect("wss://your-mqtt-broker:port", {
+    const client = mqtt.connect("wss://tinyvacmqtt188.cloud.shiftr.io:1883", {
         username: username,
         password: password
     });

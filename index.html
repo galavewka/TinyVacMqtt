@@ -181,38 +181,44 @@
     const urlParams = new URLSearchParams(window.location.search);
     const username = urlParams.get("username");
     const password = urlParams.get("password");
-    const topics = urlParams.get("topics");
+    const topics = urlParams.get("topics") ? urlParams.get("topics").split(",") : [];
 
-    // Auto-connect to MQTT
-    if (username && password) {
-        setTimeout(() => {
-            $("#connect-btn").click();
-        }, 500);
-    }
+    // Initialize MQTT client
+    const client = mqtt.connect("wss://your-mqtt-broker:port", {
+        username: username,
+        password: password
+    });
 
-    // Auto-subscribe to topics
-    if (topics) {
-        $("#topics").val(topics.replace(/,/g, " "));
-        setTimeout(() => {
-            $("#subscribe-btn").click();
-        }, 1000);
-    }
+    // Handle MQTT connection
+    client.on("connect", function () {
+        $("#connection-status").text("✅ Connected to MQTT Broker");
 
-    // Monitor connection status
-    let checkConnection = setInterval(() => {
-        if ($("#status").text().includes("Connected")) {
-            $("#connection-status").text("✅ Connected to MQTT Broker");
-            clearInterval(checkConnection);
+        // Subscribe to topics if available
+        if (topics.length > 0) {
+            topics.forEach(topic => {
+                client.subscribe(topic, function (err) {
+                    if (!err) {
+                        $("#subscription-status").text("📌 Subscribed to:");
+                        $("#subscribed-topics").append(`<div>${topic}</div>`);
+                    }
+                });
+            });
         }
-    }, 500);
+    });
 
-    // Monitor subscription status
-    let checkSubscription = setInterval(() => {
-        if ($("#subscribed-topics").text().trim().length > 0) {
-            $("#subscription-status").html(`📌 Subscribed to: ${$("#subscribed-topics").text()}`);
-            clearInterval(checkSubscription);
-        }
-    }, 500);
+    // Handle errors
+    client.on("error", function (err) {
+        console.error("MQTT Error:", err);
+        $("#connection-status").text("❌ Connection Failed");
+    });
+
+    // Handle disconnection
+    client.on("close", function () {
+        $("#connection-status").text("⚠️ Disconnected. Reconnecting...");
+        setTimeout(() => {
+            client.reconnect();
+        }, 3000);
+    });
 });
         let client;
         let deviceHeartbeats = {};

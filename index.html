@@ -159,7 +159,7 @@
 </head>
 <body>
    <h1>TinyVac Companion</h1>
-    <h1>TinyVac Companion</h1>
+  
    
    <div id="connection-status">Connecting to MQTT Broker...</div>
 <div id="subscription-status">Not subscribed</div>
@@ -207,45 +207,7 @@ let client;
         }
     });
 
-    // Handle errors
-    client.on("error", function (err) {
-        console.error("MQTT Error:", err);
-        $("#connection-status").text("❌ Connection Failed");
-    });
-
-    // Handle disconnection
-    client.on("close", function () {
-        $("#connection-status").text("⚠️ Disconnected. Reconnecting...");
-        setTimeout(() => {
-            client.reconnect();
-        }, 3000);
-    });
-});
-      
-        let deviceHeartbeats = {};
-        
-        $("#connect-btn").click(function () {
-            const username = $("#username").val();
-            const password = $("#password").val();
-            const brokerUrl = "wss://tinyvacmqtt188.cloud.shiftr.io";
-            
-            client = mqtt.connect(brokerUrl, {
-                username: username,
-                password: password
-            });
-            
-            client.on("connect", function () {
-                $("#connection-status").fadeIn(500);
-            });
-            
-
-function getCurrentTime() {
-    const now = new Date();
-    return now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
-}
-
-
-                client.on("message", function (topic, message) {
+client.on("message", function (topic, message) {
     try {
         const parsedMessage = JSON.parse(message.toString());
         const deviceName = parsedMessage.deviceName || 'Unknown Device';
@@ -327,6 +289,47 @@ function getCurrentTime() {
         }
     }
 }, 5000);
+
+	 
+    // Handle errors
+    client.on("error", function (err) {
+        console.error("MQTT Error:", err);
+        $("#connection-status").text("❌ Connection Failed");
+    });
+
+    // Handle disconnection
+    client.on("close", function () {
+        $("#connection-status").text("⚠️ Disconnected. Reconnecting...");
+        setTimeout(() => {
+            client.reconnect();
+        }, 3000);
+    });
+});
+      
+        let deviceHeartbeats = {};
+        
+        $("#connect-btn").click(function () {
+            const username = $("#username").val();
+            const password = $("#password").val();
+            const brokerUrl = "wss://tinyvacmqtt188.cloud.shiftr.io";
+            
+            client = mqtt.connect(brokerUrl, {
+                username: username,
+                password: password
+            });
+            
+            client.on("connect", function () {
+                $("#connection-status").fadeIn(500);
+            });
+            
+
+function getCurrentTime() {
+    const now = new Date();
+    return now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+}
+
+
+
     </script>
 
 

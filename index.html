@@ -197,6 +197,29 @@
             font-weight: bold;
             font-size: 18px;
         }
+
+        /* Battery Styles */
+        .battery-container {
+            width: 80px;
+            height: 30px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            margin: 10px auto;
+            background-color: #444;
+        }
+        .battery-level {
+            height: 100%;
+            border-radius: 3px;
+            background-color: #0f0;
+            width: 0;
+            transition: width 0.2s ease-in-out;
+        }
+        .battery-text {
+            font-size: 14px;
+            color: #fff;
+            text-align: center;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -222,6 +245,13 @@
     <div id="settings-ui">
         <div id="settings-close">✖</div>
         <h3>SETTINGS</h3>
+
+        <div id="battery-indicator">
+            <div class="battery-container">
+                <div class="battery-level" id="battery-level-display"></div>
+            </div>
+            <div class="battery-text" id="battery-level-text"></div>
+        </div>
 
         <div class="pressure-label" id="pressure-display">
             <span class="set-pressure">N/A</span>
@@ -295,10 +325,10 @@
             return urlParams.get(param);
         }
 
-       const username = getUrlParam("username");
-    const password =getUrlParam("password");
-    const topics = getUrlParam("topics") ? getUrlParam("topics").split(",") : [];
-    const brokerUrl = "wss://tinyvacmqtt188.cloud.shiftr.io";
+        const username = getUrlParam("username");
+        const password = getUrlParam("password");
+        const topics = getUrlParam("topics") ? getUrlParam("topics").split(",") : [];
+        const brokerUrl = "wss://tinyvacmqtt188.cloud.shiftr.io";
 
         function connectMQTT() {
             client = mqtt.connect(brokerUrl, {
@@ -413,6 +443,11 @@
                 } else {
                     $(".settings-start").text("START").css("background-color", "green");
                 }
+
+                // Update battery level
+                if (data.batteryLevel !== undefined) {
+                    updateBatteryDisplay(data.batteryLevel);
+                }
                 // The dropdowns are only updated on settings load.
             }
         }
@@ -431,6 +466,23 @@
             }
         }, 5000);
 
+        function updateBatteryDisplay(level) {
+            const batteryLevelDisplay = $("#battery-level-display");
+            const batteryText = $("#battery-level-text");
+            let color = "#0f0"; // Default: Green
+
+            if (level <= 20) {
+                color = "#f00"; // Red
+            } else if (level <= 50) {
+                color = "#ff0"; // Yellow
+            } else {
+                color = "#0f0"; // Green
+            }
+
+            batteryLevelDisplay.css("backgroundColor", color).css("width", `${level}%`);
+            batteryText.text(`${level}%`);
+        }
+
         function openSettings(deviceName) {
             currentDevice = deviceName;
             const deviceInfo = deviceHeartbeats[deviceName];
@@ -444,6 +496,13 @@
                     $(".settings-start").text("STOP").css("background-color", "red");
                 } else {
                     $(".settings-start").text("START").css("background-color", "green");
+                }
+
+                // Update battery level
+                if (deviceInfo.batteryLevel !== undefined) {
+                    updateBatteryDisplay(deviceInfo.batteryLevel);
+                } else {
+                    updateBatteryDisplay(100); //show 100% if undefined
                 }
 
                 // Update the select elements *only* when the settings panel is opened.
@@ -463,6 +522,7 @@
             } else {
                 $("#pressure-display").html(`<span class="set-pressure">N/A</span><span class="real-pressure">/N/A</span>`);
                 $(".settings-start").text("START").css("background-color", "green");
+                updateBatteryDisplay(100);
             }
         }
 

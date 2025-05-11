@@ -1,221 +1,399 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TinyVac Companion</title>
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
-            color: #fff;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .status-box {
-            width: 100%;
-            max-width: 800px;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            margin-bottom: 20px;
-            text-align: center;
-            font-weight: bold;
-        }
-        .dashboard {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            max-width: 1000px;
-        }
-        .alarms, .devices {
-            width: 45%;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-        }
-        .alarms h2, .devices h2 {
-            margin-top: 0;
-            font-size: 20px;
-            text-align: center;
-            cursor: pointer;
-        }
-        .message-list, .device-list {
-            list-style: none;
-            padding: 0;
-            text-align: left;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .message-list li {
-            background: red;
-            color: white;
-            padding: 12px;
-            margin: 6px 0;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-        .device-list li {
-            padding: 12px;
-            margin: 6px 0;
-            border-radius: 6px;
-            font-size: 14px;
-            color: white;
-        }
-        .device-online {
-            background: green;
-        }
-        .device-offline {
-            background: red;
-        }
-        .device-warning {
-            background: yellow !important;
-            color: black !important;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TinyVac Companion</title>
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .status-box {
+      width: 100%;
+      max-width: 800px;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      margin-bottom: 20px;
+      text-align: center;
+      font-weight: bold;
+    }
+    .dashboard {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 1000px;
+    }
+    .alarms, .devices {
+      width: 45%;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    .alarms h2, .devices h2 {
+      margin-top: 0;
+      font-size: 20px;
+      text-align: center;
+      cursor: pointer;
+    }
+    .message-list, .device-list {
+      list-style: none;
+      padding: 0;
+      text-align: left;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .message-list li {
+      background: red;
+      color: white;
+      padding: 12px;
+      margin: 6px 0;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .device-list li {
+      padding: 12px;
+      margin: 6px 0;
+      border-radius: 6px;
+      font-size: 14px;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .device-online {
+      background: green;
+    }
+    .device-offline {
+      background: red;
+    }
+    .device-warning {
+      background: yellow !important;
+      color: black !important;
+    }
+    .settings-icon {
+      cursor: pointer;
+      color: lime;
+      font-size: 20px;
+      margin-left: 10px;
+    }
+
+    /* SETTINGS UI */
+    #settings-ui {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 300px;
+      background: #40036f;
+      border: 4px solid #ff0040;
+      padding: 20px;
+      z-index: 1000;
+      display: none;
+      border-radius: 10px;
+      text-align: center;
+      color: white;
+    }
+    #settings-ui h3 {
+      margin: 0 0 10px;
+      font-size: 20px;
+      color: red;
+    }
+    .settings-button {
+      font-size: 24px;
+      padding: 10px 20px;
+      margin: 10px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .settings-plus {
+      background: #662d91;
+      color: white;
+    }
+    .settings-minus {
+      background: #662d91;
+      color: white;
+    }
+    .settings-start {
+      background: green;
+      color: white;
+      width: 100%;
+    }
+    .settings-save {
+      background: green;
+      color: white;
+      width: 100%;
+      margin-top: 10px;
+    }
+    .pressure-label {
+      font-size: 32px;
+      margin: 15px 0;
+      color: #48ff00;
+    }
+    #settings-close {
+      position: absolute;
+      top: 5px;
+      right: 10px;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 18px;
+    }
+  </style>
 </head>
 <body>
-    <h1>TinyVac Companion</h1>
-    
-    <div class="status-box">
-        <div id="connection-status">Connecting to MQTT Broker...</div>
-        <div id="subscription-status">Not subscribed</div>
-        <div id="subscribed-topics"></div>
+  <h1>TinyVac Companion</h1>
+
+  <div class="status-box">
+    <div id="connection-status">Connecting to MQTT Broker...</div>
+    <div id="subscription-status">Not subscribed</div>
+    <div id="subscribed-topics"></div>
+  </div>
+
+  <div class="dashboard">
+    <div class="alarms">
+      <h2 id="alarms-toggle">Last Alarms ▼</h2>
+      <ul class="message-list" id="messages"></ul>
     </div>
-
-    <div class="dashboard">
-        <div class="alarms">
-            <h2 id="alarms-toggle">Last Alarms ▼</h2>
-            <ul class="message-list" id="messages"></ul>
-        </div>
-        <div class="devices">
-            <h2 id="devices-toggle">Active Devices ▼</h2>
-            <ul class="device-list" id="active-devices"></ul>
-        </div>
+    <div class="devices">
+      <h2 id="devices-toggle">Active Devices ▼</h2>
+      <ul class="device-list" id="active-devices"></ul>
     </div>
+  </div>
 
-    <script>
-        let client;
-        let deviceHeartbeats = {};
+  <div id="settings-ui">
+    <div id="settings-close">✖</div>
+    <h3>SETTINGS</h3>
+    <div class="pressure-label" id="pressure-display">N/A</div>
+    <div>
+      <button class="settings-button settings-minus">−</button>
+      <button class="settings-button settings-plus">+</button>
+    </div>
+    <button class="settings-button settings-start">START</button>
+    <button class="settings-button settings-save">SAVE</button>
+  </div>
 
-        function getUrlParam(param) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(param);
+  <script>
+    let client;
+    let deviceHeartbeats = {};
+    let currentDevice = "";
+
+    function getUrlParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    const username = getUrlParam("username");
+    const password =getUrlParam("password");
+    const topics = getUrlParam("topics") ? getUrlParam("topics").split(",") : [];
+    const brokerUrl = "wss://tinyvacmqtt188.cloud.shiftr.io";
+
+    function connectMQTT() {
+      client = mqtt.connect(brokerUrl, {
+        username: username,
+        password: password
+      });
+
+      client.on("connect", function () {
+        $("#connection-status").text("Connected to MQTT Broker").css("color", "lightgreen");
+        client.subscribe('vacAlarms');
+        if (topics.length > 0) {
+          topics.forEach(topic => client.subscribe(topic));
+          $("#subscription-status").text("Subscribed to: " + topics.join(", ")).css("color", "lightblue");
+        }
+      });
+
+      client.on("message", function (topic, message) {
+        handleMessage(topic, message.toString());
+      });
+
+      client.on("error", function () {
+        $("#connection-status").text("Connection Failed").css("color", "red");
+      });
+    }
+
+    function getCurrentTime() {
+      const now = new Date();
+      return now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+    }
+
+    function handleMessage(topic, message) {
+      try {
+        const parsed = JSON.parse(message);
+        const deviceName = parsed.deviceName || "Unknown Device";
+        const type = parsed.type || "info";
+        const msgContent = parsed.message || "No message";
+        const batteryLevel = parsed.batteryLevel ?? "N/A";
+        const status = parsed.status || "Unknown";
+        const timestamp = getCurrentTime();
+        const setPressure = parsed.setPressure;
+        const realPressure = parsed.realPressure;
+        const therapyEnabled = parsed.therapyEnabled;
+        const deviceTopic = parsed.topic; // Extract the device's topic
+
+        // Store device details for settings
+        if (!deviceHeartbeats[deviceName]) {
+          deviceHeartbeats[deviceName] = {};
+        }
+        deviceHeartbeats[deviceName].lastSeen = Date.now();
+        deviceHeartbeats[deviceName].batteryLevel = batteryLevel;
+        deviceHeartbeats[deviceName].status = status;
+        deviceHeartbeats[deviceName].setPressure = setPressure;
+        deviceHeartbeats[deviceName].realPressure = realPressure;
+        deviceHeartbeats[deviceName].therapyEnabled = therapyEnabled;
+        deviceHeartbeats[deviceName].deviceTopic = deviceTopic; // Store the device topic
+
+        // Update online device status
+        if (batteryLevel !== "N/A" && status !== "Unknown") {
+          let deviceText = `${deviceName} ${batteryLevel}% | Status: ${status} | Online`;
+          let icon = `<span class="settings-icon" onclick="openSettings('${deviceName}')">⚙️</span>`;
+          let deviceElement = $(`#${deviceName}`);
+
+          let newClass = "device-online";
+          if (status === "Alarm" || status === "Warning") newClass = "device-warning";
+
+          if (deviceElement.length) {
+            deviceElement.removeClass("device-offline device-online device-warning")
+              .addClass(newClass)
+              .html(deviceText + icon);
+          } else {
+            $("#active-devices").append(`<li id="${deviceName}" class="${newClass}">${deviceText} ${icon}</li>`);
+          }
         }
 
-        const username = getUrlParam("username");
-        const password = getUrlParam("password");
-        const topics = getUrlParam("topics") ? getUrlParam("topics").split(",") : [];
+        // Handle alarms
+        if (type === "Alarm" || type === "Warning") {
+          let bgColor = type === "Alarm" ? "red" : "yellow";
+          let textColor = type === "Alarm" ? "white" : "black";
 
-        const brokerUrl = "wss://tinyvacmqtt188.cloud.shiftr.io";
+          $("#messages").prepend(`
+            <li style="background: ${bgColor}; color: ${textColor};">
+              <b>${deviceName}:</b> ${msgContent}
+              <span style="float: right; font-size: 12px; opacity: 0.8;">${timestamp}</span>
+            </li>`);
 
-        function connectMQTT() {
-            client = mqtt.connect(brokerUrl, {
-                username: username,
-                password: password
-            });
-
-            client.on("connect", function () {
-                $("#connection-status").text("Connected to MQTT Broker").css("color", "lightgreen");
-
-                if (topics.length > 0) {
-                    topics.forEach(topic => client.subscribe(topic));
-                    $("#subscription-status").text("Subscribed to: " + topics.join(", ")).css("color", "lightblue");
-                }
-            });
-
-            client.on("message", function (topic, message) {
-                handleMessage(topic, message.toString());
-            });
-
-            client.on("error", function () {
-                $("#connection-status").text("Connection Failed").css("color", "red");
-            });
+          let deviceElement = $(`#${deviceName}`);
+          if (deviceElement.length) {
+            deviceElement.removeClass("device-online device-offline").addClass("device-warning");
+          }
         }
+      } catch (e) {
+        console.error("Invalid JSON:", message);
+      }
+    }
 
-        function getCurrentTime() {
-            const now = new Date();
-            return now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+    setInterval(() => {
+      const now = Date.now();
+      for (let device in deviceHeartbeats) {
+        if (now - deviceHeartbeats[device].lastSeen >= 20000) {
+          let el = $(`#${device}`);
+          if (el.length) {
+            el.removeClass("device-online device-warning")
+              .addClass("device-offline")
+              .text(`${device} - Offline`);
+          }
         }
+      }
+    }, 5000);
 
-        function handleMessage(topic, message) {
-            try {
-                const parsedMessage = JSON.parse(message);
-                const deviceName = parsedMessage.deviceName || "Unknown Device";
-                const type = parsedMessage.type || "info";
-                const msgContent = parsedMessage.message || "No message";
-                const batteryLevel = parsedMessage.batteryLevel !== undefined ? parsedMessage.batteryLevel : "N/A";
-                const status = parsedMessage.status || "Unknown";
-                const timestamp = getCurrentTime();
+    function openSettings(deviceName) {
+      currentDevice = deviceName;
+      const deviceInfo = deviceHeartbeats[deviceName];
+      $("#settings-ui").fadeIn();
 
-                // Handle Active Devices
-                if (batteryLevel !== "N/A" && status !== "Unknown") {
-                    deviceHeartbeats[deviceName] = Date.now();
-                    let deviceText = `${deviceName} ${batteryLevel}% | Status: ${status} | Online`;
-                    let deviceElement = $(`#${deviceName}`);
+      if (deviceInfo) {
+        $("#pressure-display").text(deviceInfo.setPressure !== undefined ? deviceInfo.setPressure : "N/A");
 
-                    let newClass = "device-online"; 
-                    if (status === "Alarm" || status === "Warning") {
-                        newClass = "device-warning";
-                    }
-
-                    if (deviceElement.length) {
-                        deviceElement.removeClass("device-offline device-online device-warning")
-                                    .addClass(newClass)
-                                    .text(deviceText);
-                    } else {
-                        $("#active-devices").append(`<li id="${deviceName}" class="${newClass}">${deviceText}</li>`);
-                    }
-                }
-
-                // Handle Alarm/Warning Messages
-                if (type === "Alarm" || type === "Warning") {
-                    let bgColor = type === "Alarm" ? "red" : "yellow";
-                    let textColor = type === "Alarm" ? "white" : "black";
-
-                    $("#messages").prepend(
-                        `<li style="background: ${bgColor}; color: ${textColor}; padding: 10px; border-radius: 5px; margin-bottom: 5px;">
-                            <b>${deviceName}:</b> ${msgContent} 
-                            <span style="float: right; font-size: 12px; opacity: 0.8;">${timestamp}</span>
-                        </li>`
-                    );
-
-                    let deviceElement = $(`#${deviceName}`);
-                    if (deviceElement.length) {
-                        deviceElement.removeClass("device-online device-offline").addClass("device-warning");
-                    }
-                }
-            } catch (error) {
-                console.error("Invalid JSON received", message);
-            }
+        // Update Start/Stop button based on therapyEnabled
+        if (deviceInfo.therapyEnabled === 1) {
+          $(".settings-start").text("STOP").css("background-color", "red");
+        } else {
+          $(".settings-start").text("START").css("background-color", "green");
         }
+      } else {
+        $("#pressure-display").text("N/A");
+        $(".settings-start").text("START").css("background-color", "green");
+      }
+    }
 
-        // Check for Offline Devices
-        setInterval(() => {
-            const now = Date.now();
-            for (let device in deviceHeartbeats) {
-                if (now - deviceHeartbeats[device] >= 20000) {
-                    let deviceElement = $(`#${device}`);
-                    if (deviceElement.length) {
-                        deviceElement.removeClass("device-online device-warning")
-                                    .addClass("device-offline")
-                                    .text(`${device} - Offline`);
-                    }
-                }
-            }
-        }, 5000);
+    $("#settings-close").click(() => $("#settings-ui").fadeOut());
 
-        // Auto-connect to MQTT
-        connectMQTT();
-    </script>
+    $(".settings-plus").click(() => {
+    const deviceInfo = deviceHeartbeats[currentDevice];
+    if (deviceInfo) {
+      let val = parseInt($("#pressure-display").text());
+      if (val < 300) {
+        $("#pressure-display").text(val + 10);
+      }
+    }
+  });
+
+  $(".settings-minus").click(() => {
+    const deviceInfo = deviceHeartbeats[currentDevice];
+    if (deviceInfo) {
+      let val = parseInt($("#pressure-display").text());
+      if (val > 10) {
+        $("#pressure-display").text(val - 10);
+      }
+    }
+  });
+
+    $(".settings-start").click(() => {
+    const deviceInfo = deviceHeartbeats[currentDevice];
+    if (deviceInfo) {
+      const newTherapyState = deviceInfo.therapyEnabled === 1 ? 0 : 1; // Toggle state
+      const currentPressure = parseInt($("#pressure-display").text());
+      const payload = JSON.stringify({
+        deviceName: currentDevice,
+        command: "updateSettings",
+        therapyEnabled: newTherapyState,
+        setPressure: currentPressure // Include current pressure in the payload
+      });
+      client.publish(`${deviceInfo.deviceTopic}/${currentDevice}/settings`, payload);
+
+      // Immediately update the button in the UI
+      if (newTherapyState === 1) {
+        $(".settings-start").text("STOP").css("background-color", "red");
+      } else {
+        $(".settings-start").text("START").css("background-color", "green");
+      }
+
+      // Update the stored state
+      deviceHeartbeats[currentDevice].therapyEnabled = newTherapyState;
+    }
+  });
+
+  $(".settings-save").click(() => {
+    const deviceInfo = deviceHeartbeats[currentDevice];
+    if (deviceInfo) {
+      const pressure = parseInt($("#pressure-display").text());
+      const currentTherapyState = deviceInfo.therapyEnabled;
+      const payload = JSON.stringify({
+        deviceName: currentDevice,
+        command: "updateSettings",
+        setPressure: pressure,
+        therapyEnabled: currentTherapyState // Include current therapy state
+      });
+      client.publish(`${deviceInfo.deviceTopic}/${currentDevice}/settings`, payload);
+      $("#settings-ui").fadeOut();
+    }
+  });
+
+    connectMQTT();
+  </script>
 </body>
 </html>

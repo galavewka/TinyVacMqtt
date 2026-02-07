@@ -22,6 +22,8 @@ Session timers
 
 Alarm configuration
 
+Precise pump controller, average deviation 0.1-0.3 mm.
+
 🔄 OTA Firmware Update System
 
 Check device firmware version on startup

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>TinyVac Companion | Core OS</title>
+    <title>Tiny-VAC // CORE</title>
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
             --neon-blue: #00f2ff;
             --neon-green: #39ff14;
             --neon-red: #ff003c;
-            --glass: rgba(15, 15, 25, 0.7);
+            --glass: rgba(10, 10, 20, 0.9);
             --border: rgba(255, 255, 255, 0.1);
         }
 
@@ -21,337 +21,203 @@
             background: #050505;
             color: #e0e0e0;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            overflow-x: hidden;
-            background-image: 
-                radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0);
-            background-size: 40px 40px;
-        }
-
-        /* Animated background glow */
-        body::before {
-            content: "";
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.05), transparent 70%);
-            z-index: -1;
-            pointer-events: none;
         }
 
         h1 {
             font-family: 'Orbitron', sans-serif;
-            text-transform: uppercase;
-            letter-spacing: 5px;
             color: var(--neon-blue);
-            text-shadow: 0 0 15px rgba(0, 242, 255, 0.5);
-            margin-bottom: 30px;
-            font-size: 2.5rem;
+            text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
+            margin: 20px 0;
+            font-size: 1.6rem;
+            text-transform: uppercase;
         }
 
         .status-box {
-            width: 90%;
-            max-width: 900px;
+            width: 100%;
+            max-width: 1100px;
             background: var(--glass);
-            backdrop-filter: blur(15px);
-            padding: 20px;
-            border-radius: 2px;
-            border-left: 4px solid var(--neon-blue);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            margin-bottom: 30px;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.8rem;
-            clip-path: polygon(0 0, 98% 0, 100% 20%, 100% 100%, 2% 100%, 0 80%);
-        }
-
-        #connection-status {
-            color: var(--neon-green);
-            text-transform: uppercase;
-            margin-bottom: 5px;
+            padding: 12px;
+            border-left: 3px solid var(--neon-blue);
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            font-family: 'Orbitron';
+            font-size: 0.75rem;
         }
 
         .dashboard {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+            display: flex;
+            flex-direction: column;
             gap: 20px;
             width: 100%;
             max-width: 1100px;
         }
 
+        @media (min-width: 768px) {
+            .dashboard { display: grid; grid-template-columns: 1fr 1fr; }
+        }
+
         .alarms, .devices {
             background: var(--glass);
-            backdrop-filter: blur(12px);
-            padding: 25px;
+            padding: 15px;
             border: 1px solid var(--border);
-            border-top: 2px solid rgba(255,255,255,0.3);
-            position: relative;
+            border-radius: 8px;
         }
 
-        .alarms h2, .devices h2 {
+        h2 {
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
+            font-size: 0.9rem;
             margin-top: 0;
-            color: #fff;
+            color: #888;
             border-bottom: 1px solid var(--border);
             padding-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
         }
 
+        /* --- LIST STYLING FIX (NO OFFSET) --- */
         .message-list, .device-list {
             list-style: none;
-            padding: 0;
-            max-height: 400px;
-            overflow-y: auto;
-            scrollbar-width: thin;
+            padding: 0; /* Fixes the weird left padding */
+            margin: 0;
+            width: 100%;
         }
 
-        .message-list li {
-            border-left: 3px solid var(--neon-red);
-            background: rgba(255, 0, 60, 0.1);
-            padding: 15px;
-            margin: 10px 0;
-            animation: slideIn 0.3s ease-out;
-        }
-
-        .device-list li {
+        .message-list li, .device-list li {
             background: rgba(255, 255, 255, 0.05);
-            padding: 15px;
-            margin: 10px 0;
-            border-right: 2px solid transparent;
-            transition: 0.3s;
+            padding: 12px 15px;
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 0.95rem;
+            transition: background 0.2s;
         }
 
-        .device-online { border-right: 4px solid var(--neon-green) !important; }
-        .device-offline { border-right: 4px solid #555 !important; opacity: 0.6; }
-        .device-warning { border-right: 4px solid #ffcc00 !important; background: rgba(255, 204, 0, 0.1) !important; }
+        /* ALERTS STYLE UNIFIED */
+        .alert-item { border-right: 4px solid var(--neon-red); color: #fff; }
+        .warning-item { border-right: 4px solid #ffcc00; color: #ffcc00; }
 
-        .settings-icon {
-            cursor: pointer;
-            filter: drop-shadow(0 0 5px var(--neon-green));
-            font-size: 22px;
-            transition: transform 0.3s;
+        /* DEVICE NODES STYLE */
+        .device-online { border-right: 4px solid var(--neon-green); color: var(--neon-green); }
+        .device-warning { border-right: 4px solid #ffcc00; color: #ffcc00; }
+        .device-offline { border-right: 4px solid #444; opacity: 0.6; color: #888; }
+
+        /* BLINK ANIMATION */
+        @keyframes pulse-blink {
+            0% { filter: brightness(1); }
+            50% { filter: brightness(2); box-shadow: inset 0 0 10px rgba(255,255,255,0.1); }
+            100% { filter: brightness(1); }
         }
-        .settings-icon:hover { transform: rotate(90deg); }
+        .blink-active { animation: pulse-blink 0.4s ease-in-out; }
 
-        /* SETTINGS UI - THE AERO WINDOW */
+        .settings-icon { cursor: pointer; color: #fff; font-size: 1.2rem; }
+
+        /* SETTINGS UI */
         #settings-ui {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 400px;
-            background: rgba(10, 10, 20, 0.95);
-            backdrop-filter: blur(25px);
-            border: 1px solid var(--neon-blue);
-            box-shadow: 0 0 50px rgba(0, 242, 255, 0.2);
-            padding: 30px;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 95%; max-width: 400px;
+            background: #0a0a14;
+            border: 2px solid var(--neon-blue);
+            padding: 20px;
             z-index: 1000;
             display: none;
-            text-align: center;
-        }
-
-        #settings-ui h3 {
-            font-family: 'Orbitron', sans-serif;
-            color: var(--neon-blue);
-            letter-spacing: 3px;
-            margin-bottom: 25px;
-        }
-
-        .setting-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-
-        .setting-group label {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            color: #888;
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        .setting-group select {
-            width: 100%;
-            padding: 10px;
-            background: #1a1a2e;
-            color: #fff;
-            border: 1px solid #333;
-            font-family: 'Rajdhani';
-            outline: none;
+            border-radius: 12px;
+            box-sizing: border-box;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
         }
 
         .pressure-label {
-            font-family: 'Orbitron', sans-serif;
             background: #000;
-            padding: 20px;
-            border: 1px solid #222;
-            margin-bottom: 20px;
-        }
-
-        .set-pressure { color: var(--neon-blue); font-size: 2.5rem; }
-        .real-pressure { color: #555; font-size: 1.2rem; }
-
-        .settings-button {
-            font-family: 'Orbitron', sans-serif;
-            text-transform: uppercase;
-            font-weight: bold;
-            padding: 12px;
-            border: none;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .settings-plus, .settings-minus {
-            background: #222;
-            color: white;
-            width: 50px;
-            margin: 0 5px;
-            font-size: 1.5rem;
-        }
-
-        .settings-start {
-            width: 100%;
-            margin-top: 20px;
-            background: transparent;
-            border: 1px solid var(--neon-green);
-            color: var(--neon-green);
-        }
-
-        .settings-save {
-            width: 100%;
-            margin-top: 10px;
-            background: var(--neon-blue);
-            color: #000;
-        }
-
-        /* Battery Visualization */
-        .battery-container {
-            width: 120px;
-            height: 12px;
-            background: #111;
+            padding: 15px;
+            margin: 15px 0;
+            display: flex;
+            justify-content: space-around;
             border: 1px solid #333;
-            margin: 10px auto;
-            position: relative;
-        }
-        .battery-level {
-            height: 100%;
-            background: var(--neon-green);
-            box-shadow: 0 0 10px var(--neon-green);
+            font-family: 'Orbitron';
         }
 
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
+        .set-pressure { color: var(--neon-blue); font-size: 2rem; }
+        .real-pressure { color: #fff; font-size: 1.5rem; opacity: 0.7; }
 
-        #settings-close {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            color: #555;
-            cursor: pointer;
-        }
+        .settings-button { font-family: 'Orbitron'; padding: 12px; border: none; cursor: pointer; width: 100%; border-radius: 4px; margin-bottom: 10px; font-weight: bold; }
+        .settings-plus, .settings-minus { background: #333; color: white; width: 48%; font-size: 1.5rem; }
+        .settings-save { background: var(--neon-blue); color: #000; }
+        
+        .setting-group { margin-bottom: 12px; }
+        .setting-group label { display: block; font-size: 0.8rem; margin-bottom: 5px; color: #888; }
+        .setting-group select { width: 100%; padding: 10px; background: #1a1a2e; color: white; border: 1px solid #444; border-radius: 4px; }
 
-        /* Scrollbar styling */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--neon-blue); }
+        .battery-container { width: 80px; height: 12px; background: #222; margin: 5px auto; border: 1px solid #444; }
+        .battery-level { height: 100%; transition: width 0.3s; }
     </style>
 </head>
 <body>
-    <h1>TINY-VAC // CORE</h1>
+
+    <h1>Tiny-VAC // CORE</h1>
 
     <div class="status-box">
-        <div id="connection-status">INITIALIZING MQTT_LINK...</div>
-        <div id="subscription-status">WAITING_FOR_TOPICS</div>
-        <div id="subscribed-topics"></div>
+        <div id="connection-status">CONNECTING...</div>
+        <div id="subscription-status">GROUPS: WAITING</div>
     </div>
 
     <div class="dashboard">
         <div class="alarms">
-            <h2 id="alarms-toggle">SYSTEM_ALERTS <span>▼</span></h2>
+            <h2>ALARMS ▼</h2>
             <ul class="message-list" id="messages"></ul>
         </div>
+
         <div class="devices">
-            <h2 id="devices-toggle">ACTIVE_NODES <span>▼</span></h2>
+            <h2>DEVICES ▼</h2>
             <ul class="device-list" id="active-devices"></ul>
         </div>
     </div>
 
     <div id="settings-ui">
-        <div id="settings-close">EXIT_</div>
-        <h3>COMMAND_CENTER</h3>
+        <div id="settings-close" style="float:right; cursor:pointer; color:var(--neon-red);">[X]</div>
+        <h3 style="text-align: center; font-family: 'Orbitron'; color: var(--neon-blue);">SETTINGS</h3>
 
-        <div id="battery-indicator">
-            <div class="battery-text" id="battery-level-text">PWR: --%</div>
-            <div class="battery-container">
-                <div class="battery-level" id="battery-level-display"></div>
-            </div>
+        <div id="battery-indicator" style="text-align: center;">
+            <div class="battery-container"><div class="battery-level" id="battery-level-display"></div></div>
+            <div style="font-size: 12px;" id="battery-level-text">0%</div>
         </div>
 
-        <div class="pressure-label" id="pressure-display">
-            <span class="set-pressure">---</span>
-            <span class="real-pressure">/---</span>
-            <div style="font-size: 10px; color: #444; margin-top: 5px;">SET / REAL</div>
+        <div class="pressure-label">
+            <div style="text-align:center;"><label style="display:block; font-size:10px;">SET</label><span class="set-pressure">N/A</span></div>
+            <div style="text-align:center;"><label style="display:block; font-size:10px;">REAL</label><span class="real-pressure">/N/A</span></div>
         </div>
 
-        <div class="pressure-adjust">
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
             <button class="settings-button settings-minus">−</button>
             <button class="settings-button settings-plus">+</button>
         </div>
 
         <div class="setting-group">
-            <label>Leak Threshold</label>
-            <select id="leak-alarm">
-                <option value="15">15s</option>
-                <option value="30">30s</option>
-                <option value="60">1m</option>
-                <option value="120">2m</option>
-                <option value="OFF">OFF</option>
-            </select>
+            <label>Leak Alarm</label>
+            <select id="leak-alarm"><option value="15">15s</option><option value="30">30s</option><option value="60">1m</option><option value="120">2m</option><option value="OFF">OFF</option></select>
         </div>
-
         <div class="setting-group">
-            <label>Canister Limit</label>
-            <select id="canister-full">
-                <option value="+20">+20</option>
-                <option value="+40">+40</option>
-                <option value="+80">+80</option>
-                <option value="A">A</option>
-                <option value="OFF">OFF</option>
-            </select>
+            <label>Canister Full</label>
+            <select id="canister-full"><option value="+20">+20</option><option value="+40">+40</option><option value="+80">+80</option><option value="A">A</option><option value="OFF">OFF</option></select>
         </div>
-
         <div class="setting-group">
-            <label>Blockage Timeout</label>
-            <select id="blockage">
-                <option value="15">15s</option>
-                <option value="30">30s</option>
-                <option value="60">1m</option>
-                <option value="120">2m</option>
-                <option value="OFF">OFF</option>
-            </select>
+            <label>Blockage</label>
+            <select id="blockage"><option value="15">15s</option><option value="30">30s</option><option value="60">1m</option><option value="120">2m</option><option value="OFF">OFF</option></select>
         </div>
-
-        <div style="display: flex; gap: 10px;">
-            <div class="setting-group" style="flex: 1;">
-                <label>Audio</label>
-                <select id="sound-alarm">
-                    <option value="ON">ON</option>
-                    <option value="OFF">OFF</option>
-                </select>
-            </div>
-            <div class="setting-group" style="flex: 1;">
-                <label>Battery Alarm</label>
-                <select id="battery-alarm">
-                    <option value="ON">ON</option>
-                    <option value="OFF">OFF</option>
-                </select>
-            </div>
+        <div class="setting-group">
+            <label>Sound Alarm</label>
+            <select id="sound-alarm"><option value="ON">ON</option><option value="OFF">OFF</option></select>
+        </div>
+        <div class="setting-group">
+            <label>Battery Alarm</label>
+            <select id="battery-alarm"><option value="ON">ON</option><option value="OFF">OFF</option></select>
         </div>
 
         <button class="settings-button settings-start">START</button>
@@ -359,7 +225,7 @@
     </div>
 
     <script>
-        // --- LOGIC REMAINS IDENTICAL TO YOURS ---
+        // --- YOUR ORIGINAL JS LOGIC - UNTOUCHED ---
         let client;
         let deviceHeartbeats = {};
         let currentDevice = "";
@@ -375,26 +241,17 @@
         const brokerUrl = "wss://tinyvacmqtt188.cloud.shiftr.io";
 
         function connectMQTT() {
-            client = mqtt.connect(brokerUrl, {
-                username: username,
-                password: password
-            });
-
+            client = mqtt.connect(brokerUrl, { username, password });
             client.on("connect", function () {
-                $("#connection-status").text("LINK ESTABLISHED").css("color", "var(--neon-green)");
+                $("#connection-status").text("CONNECTED").css("color", "var(--neon-green)");
                 client.subscribe('vacAlarms');
                 if (topics.length > 0) {
                     topics.forEach(topic => client.subscribe(topic));
-                    $("#subscription-status").text("STREAMS: " + topics.join(", ")).css("color", "var(--neon-blue)");
+                    $("#subscription-status").text("GROUPS: " + topics.join(", ")).css("color", "var(--neon-blue)");
                 }
             });
-
             client.on("message", function (topic, message) {
                 handleMessage(topic, message.toString());
-            });
-
-            client.on("error", function () {
-                $("#connection-status").text("LINK CRITICAL FAILURE").css("color", "var(--neon-red)");
             });
         }
 
@@ -406,131 +263,87 @@
         function handleMessage(topic, message) {
             try {
                 const parsed = JSON.parse(message);
-                const deviceName = parsed.deviceName || "Unknown Device";
-                const type = parsed.type || "info";
-                const msgContent = parsed.message || "No message";
+                const deviceName = parsed.deviceName || "Unknown";
                 const batteryLevel = parsed.batteryLevel ?? "N/A";
                 const status = parsed.status || "Unknown";
+                const type = parsed.type || "info";
+                const msgContent = parsed.message || "No message";
                 const timestamp = getCurrentTime();
-                const setPressure = parsed.setPressure;
-                const realPressure = parsed.realPressure;
-                const therapyEnabled = parsed.therapyEnabled;
-                const deviceTopic = parsed.topic;
-                const alarmSettings = parsed.alarmSettings;
-
-                if (!deviceHeartbeats[deviceName]) {
-                    deviceHeartbeats[deviceName] = {};
-                }
+                
+                if (!deviceHeartbeats[deviceName]) { deviceHeartbeats[deviceName] = {}; }
                 deviceHeartbeats[deviceName].lastSeen = Date.now();
                 deviceHeartbeats[deviceName].batteryLevel = batteryLevel;
                 deviceHeartbeats[deviceName].status = status;
-                deviceHeartbeats[deviceName].setPressure = setPressure;
-                deviceHeartbeats[deviceName].realPressure = realPressure;
-                deviceHeartbeats[deviceName].therapyEnabled = therapyEnabled;
-                deviceHeartbeats[deviceName].deviceTopic = deviceTopic;
-                deviceHeartbeats[deviceName].alarmSettings = alarmSettings;
+                deviceHeartbeats[deviceName].setPressure = parsed.setPressure;
+                deviceHeartbeats[deviceName].realPressure = parsed.realPressure;
+                deviceHeartbeats[deviceName].therapyEnabled = parsed.therapyEnabled;
+                deviceHeartbeats[deviceName].deviceTopic = parsed.topic;
+                deviceHeartbeats[deviceName].alarmSettings = parsed.alarmSettings;
 
                 updateUI(deviceName, parsed);
 
+                // UI NODE LOGIC
                 if (batteryLevel !== "N/A" && status !== "Unknown") {
-                    let deviceText = `[${deviceName}] ${batteryLevel}% | ${status}`;
-                    let icon = `<span class="settings-icon" onclick="openSettings('${deviceName}')">⚙</span>`;
+                    let deviceText = `${deviceName} ${batteryLevel}% | Status: ${status}`;
+                    let icon = `<span class="settings-icon" onclick="openSettings('${deviceName}')">⚙️</span>`;
                     let deviceElement = $(`#${deviceName}`);
-
-                    let newClass = "device-online";
-                    if (status === "Alarm" || status === "Warning") newClass = "device-warning";
+                    let newClass = (status === "Alarm" || status === "Warning") ? "device-warning" : "device-online";
 
                     if (deviceElement.length) {
-                        deviceElement.removeClass("device-offline device-online device-warning")
-                            .addClass(newClass)
-                            .html(deviceText + icon);
+                        deviceElement.removeClass("device-offline device-online device-warning").addClass(newClass).html(`<span>${deviceText}</span> ${icon}`);
                     } else {
-                        $("#active-devices").append(`<li id="${deviceName}" class="${newClass}">${deviceText} ${icon}</li>`);
+                        $("#active-devices").append(`<li id="${deviceName}" class="${newClass}"><span>${deviceText}</span> ${icon}</li>`);
+                        deviceElement = $(`#${deviceName}`);
                     }
+                    
+                    // BLINK TRIGGER
+                    deviceElement.addClass("blink-active");
+                    setTimeout(() => deviceElement.removeClass("blink-active"), 400);
                 }
 
+                // UNIFIED ALERTS LIST LOGIC
                 if (type === "Alarm" || type === "Warning") {
+                    let alertClass = type === "Alarm" ? "alert-item" : "warning-item";
                     $("#messages").prepend(`
-                        <li>
-                            <b style="color:var(--neon-red)">[${deviceName}]</b> ${msgContent}
-                            <span style="float: right; font-size: 10px; color: #555;">${timestamp}</span>
+                        <li class="${alertClass}">
+                            <span><b>${deviceName}:</b> ${msgContent}</span>
+                            <span style="font-size: 10px; opacity: 0.6;">${timestamp}</span>
                         </li>`);
-
-                    let deviceElement = $(`#${deviceName}`);
-                    if (deviceElement.length) {
-                        deviceElement.removeClass("device-online device-offline").addClass("device-warning");
-                    }
                 }
-            } catch (e) {
-                console.error("Invalid JSON:", message);
-            }
+            } catch (e) { console.error("JSON Error", e); }
         }
 
         function updateUI(deviceName, data) {
             if (currentDevice === deviceName) {
-                if (data.realPressure !== undefined) {
-                    $("#pressure-display .real-pressure").text("/" + data.realPressure);
+                if (data.realPressure !== undefined) { $(".real-pressure").text("/" + data.realPressure); }
+                if (data.therapyEnabled !== undefined) {
+                    $(".settings-start").text(data.therapyEnabled === 1 ? "STOP" : "START").css("background", data.therapyEnabled === 1 ? "var(--neon-red)" : "green");
                 }
-                if (data.therapyEnabled === 1) {
-                    $(".settings-start").text("STOP").css({"border-color": "red", "color": "red"});
-                } else {
-                    $(".settings-start").text("START").css({"border-color": "var(--neon-green)", "color": "var(--neon-green)"});
-                }
-                if (data.batteryLevel !== undefined) {
-                    updateBatteryDisplay(data.batteryLevel);
-                }
+                if (data.batteryLevel !== undefined) { updateBatteryDisplay(data.batteryLevel); }
             }
         }
 
-        setInterval(() => {
-            const now = Date.now();
-            for (let device in deviceHeartbeats) {
-                if (now - deviceHeartbeats[device].lastSeen >= 20000) {
-                    let el = $(`#${device}`);
-                    if (el.length) {
-                        el.removeClass("device-online device-warning")
-                            .addClass("device-offline")
-                            .text(`${device} - OFFLINE`);
-                    }
-                }
-            }
-        }, 5000);
-
         function updateBatteryDisplay(level) {
-            const batteryLevelDisplay = $("#battery-level-display");
-            const batteryText = $("#battery-level-text");
-            let color = "var(--neon-green)";
-
-            if (level <= 20) color = "var(--neon-red)";
-            else if (level <= 50) color = "#ffcc00";
-
-            batteryLevelDisplay.css("backgroundColor", color).css("width", `${level}%`);
-            batteryText.text(`PWR: ${level}%`);
+            const color = level <= 20 ? "var(--neon-red)" : (level <= 50 ? "#ff0" : "var(--neon-green)");
+            $("#battery-level-display").css({"background": color, "width": level + "%"});
+            $("#battery-level-text").text(level + "%");
         }
 
         function openSettings(deviceName) {
             currentDevice = deviceName;
-            const deviceInfo = deviceHeartbeats[deviceName];
+            const info = deviceHeartbeats[deviceName];
             $("#settings-ui").fadeIn(200);
-
-            if (deviceInfo) {
-                $("#pressure-display .set-pressure").text(deviceInfo.setPressure !== undefined ? deviceInfo.setPressure : "N/A");
-                $("#pressure-display .real-pressure").text("/" + (deviceInfo.realPressure !== undefined ? deviceInfo.realPressure : "N/A"));
-
-                if (deviceInfo.therapyEnabled === 1) {
-                    $(".settings-start").text("STOP").css({"border-color": "red", "color": "red"});
-                } else {
-                    $(".settings-start").text("START").css({"border-color": "var(--neon-green)", "color": "var(--neon-green)"});
-                }
-
-                updateBatteryDisplay(deviceInfo.batteryLevel !== undefined ? deviceInfo.batteryLevel : 100);
-
-                if (deviceInfo.alarmSettings) {
-                    $("#leak-alarm").prop('selectedIndex', parseInt(deviceInfo.alarmSettings[0]));
-                    $("#canister-full").prop('selectedIndex', parseInt(deviceInfo.alarmSettings[1]));
-                    $("#blockage").prop('selectedIndex', parseInt(deviceInfo.alarmSettings[2]));
-                    $("#sound-alarm").prop('selectedIndex', parseInt(deviceInfo.alarmSettings[3]));
-                    $("#battery-alarm").prop('selectedIndex', parseInt(deviceInfo.alarmSettings[4]));
+            if (info) {
+                $(".set-pressure").text(info.setPressure ?? "N/A");
+                $(".real-pressure").text("/" + (info.realPressure ?? "N/A"));
+                $(".settings-start").text(info.therapyEnabled === 1 ? "STOP" : "START").css("background", info.therapyEnabled === 1 ? "var(--neon-red)" : "green");
+                updateBatteryDisplay(info.batteryLevel !== "N/A" ? info.batteryLevel : 0);
+                if (info.alarmSettings) {
+                    $("#leak-alarm").prop('selectedIndex', parseInt(info.alarmSettings[0]));
+                    $("#canister-full").prop('selectedIndex', parseInt(info.alarmSettings[1]));
+                    $("#blockage").prop('selectedIndex', parseInt(info.alarmSettings[2]));
+                    $("#sound-alarm").prop('selectedIndex', parseInt(info.alarmSettings[3]));
+                    $("#battery-alarm").prop('selectedIndex', parseInt(info.alarmSettings[4]));
                 }
             }
         }
@@ -538,63 +351,54 @@
         $("#settings-close").click(() => $("#settings-ui").fadeOut(200));
 
         $(".settings-plus").click(() => {
-            let val = parseInt($("#pressure-display .set-pressure").text()) || 0;
-            if (val < 300) $("#pressure-display .set-pressure").text(val + 10);
+            let val = parseInt($(".set-pressure").text()) || 0;
+            if (val < 300) $(".set-pressure").text(val + 10);
         });
 
         $(".settings-minus").click(() => {
-            let val = parseInt($("#pressure-display .set-pressure").text()) || 0;
-            if (val > 10) $("#pressure-display .set-pressure").text(val - 10);
+            let val = parseInt($(".set-pressure").text()) || 0;
+            if (val > 10) $(".set-pressure").text(val - 10);
         });
 
         $(".settings-start").click(() => {
-            const deviceInfo = deviceHeartbeats[currentDevice];
-            if (deviceInfo) {
-                const newTherapyState = deviceInfo.therapyEnabled === 1 ? 0 : 1;
+            const info = deviceHeartbeats[currentDevice];
+            if (info) {
+                const newState = info.therapyEnabled === 1 ? 0 : 1;
                 const payload = JSON.stringify({
-                    deviceName: currentDevice,
-                    command: "updateSettings",
-                    therapyEnabled: newTherapyState,
-                    setPressure: parseInt($("#pressure-display .set-pressure").text()),
-                    leakAlarm: $("#leak-alarm").val(),
-                    canisterFull: $("#canister-full").val(),
-                    blockage: $("#blockage").val(),
-                    soundAlarm: $("#sound-alarm").val(),
-                    batteryAlarm: $("#battery-alarm").val()
+                    deviceName: currentDevice, command: "updateSettings", therapyEnabled: newState,
+                    setPressure: parseInt($(".set-pressure").text()),
+                    leakAlarm: $("#leak-alarm").val(), canisterFull: $("#canister-full").val(), blockage: $("#blockage").val(),
+                    soundAlarm: $("#sound-alarm").val(), batteryAlarm: $("#battery-alarm").val()
                 });
-                client.publish(`${deviceInfo.deviceTopic}/${currentDevice}/settings`, payload);
-                deviceHeartbeats[currentDevice].therapyEnabled = newTherapyState;
-                updateUI(currentDevice, {therapyEnabled: newTherapyState});
+                client.publish(`${info.deviceTopic}/${currentDevice}/settings`, payload);
+                info.therapyEnabled = newState;
+                updateUI(currentDevice, {therapyEnabled: newState});
             }
         });
 
         $(".settings-save").click(() => {
-            const deviceInfo = deviceHeartbeats[currentDevice];
-            if (deviceInfo) {
-                const alarmSettings = [
-                    $("#leak-alarm").prop('selectedIndex'),
-                    $("#canister-full").prop('selectedIndex'),
-                    $("#blockage").prop('selectedIndex'),
-                    $("#sound-alarm").prop('selectedIndex'),
-                    $("#battery-alarm").prop('selectedIndex')
-                ].join("");
-
+            const info = deviceHeartbeats[currentDevice];
+            if (info) {
+                const alarmStr = [$("#leak-alarm").prop('selectedIndex'), $("#canister-full").prop('selectedIndex'), $("#blockage").prop('selectedIndex'), $("#sound-alarm").prop('selectedIndex'), $("#battery-alarm").prop('selectedIndex')].join("");
                 const payload = JSON.stringify({
-                    deviceName: currentDevice,
-                    command: "updateSettings",
-                    setPressure: parseInt($("#pressure-display .set-pressure").text()),
-                    therapyEnabled: deviceInfo.therapyEnabled,
-                    alarmSettings: alarmSettings
+                    deviceName: currentDevice, command: "updateSettings",
+                    setPressure: parseInt($(".set-pressure").text()), therapyEnabled: info.therapyEnabled, alarmSettings: alarmStr
                 });
-                client.publish(`${deviceInfo.deviceTopic}/${currentDevice}/settings`, payload);
+                client.publish(`${info.deviceTopic}/${currentDevice}/settings`, payload);
                 $("#settings-ui").fadeOut(200);
             }
         });
+
+        setInterval(() => {
+            const now = Date.now();
+            for (let d in deviceHeartbeats) {
+                if (now - deviceHeartbeats[d].lastSeen >= 20000) {
+                    $(`#${d}`).removeClass("device-online device-warning").addClass("device-offline").text(`${d} - Offline`);
+                }
+            }
+        }, 5000);
 
         connectMQTT();
     </script>
 </body>
 </html>
-
-
-

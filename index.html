@@ -296,7 +296,7 @@
         <div class="pressure-label" id="pressure-display">
             <span class="set-pressure">---</span>
             <span class="real-pressure">/---</span>
-            <div style="font-size: 10px; color: #444; margin-top: 5px;">PSI_TARGET / ACTUAL</div>
+            <div style="font-size: 10px; color: #444; margin-top: 5px;">SET / REAL</div>
         </div>
 
         <div class="pressure-adjust">
@@ -354,8 +354,8 @@
             </div>
         </div>
 
-        <button class="settings-button settings-start">START_SESSION</button>
-        <button class="settings-button settings-save">COMMIT_CHANGES</button>
+        <button class="settings-button settings-start">START</button>
+        <button class="settings-button settings-save">SAVE</button>
     </div>
 
     <script>
@@ -472,9 +472,9 @@
                     $("#pressure-display .real-pressure").text("/" + data.realPressure);
                 }
                 if (data.therapyEnabled === 1) {
-                    $(".settings-start").text("STOP_SESSION").css({"border-color": "red", "color": "red"});
+                    $(".settings-start").text("STOP").css({"border-color": "red", "color": "red"});
                 } else {
-                    $(".settings-start").text("START_SESSION").css({"border-color": "var(--neon-green)", "color": "var(--neon-green)"});
+                    $(".settings-start").text("START").css({"border-color": "var(--neon-green)", "color": "var(--neon-green)"});
                 }
                 if (data.batteryLevel !== undefined) {
                     updateBatteryDisplay(data.batteryLevel);
@@ -490,7 +490,7 @@
                     if (el.length) {
                         el.removeClass("device-online device-warning")
                             .addClass("device-offline")
-                            .text(`${device} - LINK_LOST`);
+                            .text(`${device} - OFFLINE`);
                     }
                 }
             }
@@ -595,4 +595,5 @@
     </script>
 </body>
 </html>
+
 

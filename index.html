@@ -315,7 +315,7 @@
 
         function updateUI(deviceName, data) {
             if (currentDevice === deviceName) {
-                if (data.realPressure !== undefined) { $(".real-pressure").text("/" + data.realPressure); }
+                if (data.realPressure !== undefined) { $(".real-pressure").text(data.realPressure); }
                 if (data.therapyEnabled !== undefined) {
                     $(".settings-start").text(data.therapyEnabled === 1 ? "STOP" : "START").css("background", data.therapyEnabled === 1 ? "var(--neon-red)" : "green");
                 }
@@ -402,4 +402,5 @@
     </script>
 </body>
 </html>
+
 

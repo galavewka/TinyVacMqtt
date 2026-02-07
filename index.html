@@ -335,7 +335,7 @@
             $("#settings-ui").fadeIn(200);
             if (info) {
                 $(".set-pressure").text(info.setPressure ?? "N/A");
-                $(".real-pressure").text("/" + (info.realPressure ?? "N/A"));
+                $(".real-pressure").text((info.realPressure ?? "N/A"));
                 $(".settings-start").text(info.therapyEnabled === 1 ? "STOP" : "START").css("background", info.therapyEnabled === 1 ? "var(--neon-red)" : "green");
                 updateBatteryDisplay(info.batteryLevel !== "N/A" ? info.batteryLevel : 0);
                 if (info.alarmSettings) {
@@ -402,5 +402,6 @@
     </script>
 </body>
 </html>
+
 
 

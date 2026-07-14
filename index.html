@@ -6,201 +6,417 @@
     <title>Tiny-VAC // CORE</title>
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --neon-blue: #00f2ff;
-            --neon-green: #39ff14;
-            --neon-red: #ff003c;
-            --glass: rgba(10, 10, 20, 0.9);
-            --border: rgba(255, 255, 255, 0.1);
+            --gasket: #3fa9dc;
+            --gasket-deep: #1f6fa8;
+            --gasket-pale: #e4f2fb;
+            --gasket-ring: #bfe3f7;
+            --body-white: #ffffff;
+            --bg: #eef3f7;
+            --panel: #ffffff;
+            --panel-border: #dfe7ee;
+            --ink: #17242f;
+            --muted: #66768349;
+            --muted-2: #647585;
+            --signal-green: #17975e;
+            --signal-green-bg: #e6f6ee;
+            --signal-yellow: #b8720a;
+            --signal-yellow-bg: #fdf1de;
+            --signal-red: #d0332a;
+            --signal-red-bg: #fdeceb;
+            --offline-grey: #8b98a3;
+            --offline-bg: #f0f3f5;
+            --mono: 'IBM Plex Mono', monospace;
+            --sans: 'Inter', sans-serif;
+
+            /* legacy aliases — the original MQTT script sets colors via these var names directly */
+            --neon-blue: var(--gasket-deep);
+            --neon-green: var(--signal-green);
+            --neon-red: var(--signal-red);
         }
 
-        /* --- BOIDS CANVAS STYLE --- */
+        * { box-sizing: border-box; }
+
         #boids-canvas {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1; /* Behind UI */
-            background: #050505;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            background: var(--bg);
         }
 
         body {
-            font-family: 'Rajdhani', sans-serif;
-            background: transparent; /* Changed to let canvas show */
-            color: #e0e0e0;
+            font-family: var(--sans);
+            background: transparent;
+            color: var(--ink);
             margin: 0;
-            padding: 10px;
+            padding: 20px 14px 60px;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
         }
 
+        a, button, select { font-family: inherit; }
+        *:focus-visible { outline: 2px solid var(--gasket-deep); outline-offset: 2px; }
+
+        .app-shell { width: 100%; max-width: 1100px; }
+
+        /* --- TOPBAR --- */
+        .topbar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 4px 4px 20px;
+            flex-wrap: wrap; gap: 12px;
+        }
+        .brand { display: flex; align-items: center; gap: 14px; }
+        .brand-icon {
+            width: 46px; height: 46px; flex-shrink: 0;
+            border-radius: 50%;
+            background: var(--body-white);
+            border: 3px solid var(--gasket);
+            box-shadow: 0 0 0 4px var(--gasket-ring), 0 2px 8px rgba(31, 111, 168, 0.18);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .brand-icon svg { width: 20px; height: 20px; }
         h1 {
-            font-family: 'Orbitron', sans-serif;
-            color: var(--neon-blue);
-            text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
-            margin: 20px 0;
-            font-size: 1.6rem;
-            text-transform: uppercase;
+            font-family: var(--sans);
+            color: var(--ink);
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 800;
+            letter-spacing: -0.2px;
+            line-height: 1.3;
+        }
+        h1 span { color: var(--gasket-deep); font-weight: 600; }
+        .brand-sub {
+            font-family: var(--mono); font-size: 0.68rem; letter-spacing: 1.5px;
+            text-transform: uppercase; color: var(--muted-2); margin-top: 2px;
+        }
+        .clock {
+            font-family: var(--mono); font-size: 0.95rem; color: var(--gasket-deep);
+            background: var(--panel); border: 1px solid var(--panel-border);
+            padding: 9px 16px; border-radius: 999px; letter-spacing: 1.5px;
+            box-shadow: 0 1px 3px rgba(23, 36, 47, 0.06);
         }
 
+        /* --- STATUS BOX --- */
         .status-box {
             width: 100%;
-            max-width: 1100px;
-            background: var(--glass);
-            padding: 12px;
-            border-left: 3px solid var(--neon-blue);
-            margin-bottom: 20px;
-            box-sizing: border-box;
-            font-family: 'Orbitron';
-            font-size: 0.75rem;
-            backdrop-filter: blur(5px);
+            background: var(--panel);
+            padding: 16px 18px;
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            margin-bottom: 18px;
+            box-shadow: 0 1px 3px rgba(23, 36, 47, 0.05);
+        }
+        .status-row {
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+            padding-bottom: 14px; margin-bottom: 14px;
+            border-bottom: 1px solid var(--panel-border);
+        }
+        #connection-status {
+            font-family: var(--mono); font-size: 0.78rem; letter-spacing: 1px; font-weight: 600;
+            display: flex; align-items: center; gap: 8px;
+        }
+        #connection-status::before {
+            content: ''; width: 8px; height: 8px; border-radius: 50%;
+            background: currentColor; box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 18%, transparent);
+        }
+        #subscription-status {
+            color: var(--muted-2); font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.5px;
         }
 
+        .summary-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+        .summary-chip {
+            display: flex; flex-direction: column; gap: 3px;
+            background: var(--bg);
+            border: 1px solid var(--panel-border);
+            padding: 10px 14px; border-radius: 12px;
+        }
+        .summary-chip .chip-top { display: flex; align-items: center; gap: 6px; }
+        .summary-chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .summary-chip .chip-label { font-size: 0.68rem; letter-spacing: 0.5px; color: var(--muted-2); text-transform: uppercase; }
+        .summary-chip span[id^="count-"] { font-family: var(--mono); font-weight: 700; font-size: 1.3rem; color: var(--ink); }
+        .summary-chip.online .dot { background: var(--signal-green); }
+        .summary-chip.warning .dot { background: var(--signal-yellow); }
+        .summary-chip.offline .dot { background: var(--offline-grey); }
+        .summary-chip.alarm .dot { background: var(--signal-red); }
+
+        /* --- DASHBOARD GRID --- */
         .dashboard {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+            display: flex; flex-direction: column; gap: 18px;
             width: 100%;
-            max-width: 1100px;
         }
-
         @media (min-width: 768px) {
             .dashboard { display: grid; grid-template-columns: 1fr 1fr; }
         }
 
         .alarms, .devices {
-            background: var(--glass);
-            padding: 15px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            backdrop-filter: blur(10px);
+            background: var(--panel);
+            padding: 18px;
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(23, 36, 47, 0.05);
+            border-top: 3px solid var(--signal-red);
         }
+        .devices { border-top-color: var(--gasket); }
 
         h2 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.9rem;
-            margin-top: 0;
-            color: #888;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 10px;
+            font-family: var(--sans);
+            font-size: 0.82rem;
+            font-weight: 700;
+            margin: 0 0 14px;
+            color: var(--ink);
+            letter-spacing: 0.2px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex; justify-content: space-between; align-items: center;
         }
 
         .message-list, .device-list {
             list-style: none;
-            padding: 0; 
-            margin: 0;
+            padding: 0; margin: 0;
             width: 100%;
+            max-height: 420px;
+            overflow-y: auto;
+        }
+        .message-list:empty::after, .device-list:empty::after {
+            content: 'No signal yet';
+            display: block;
+            font-family: var(--mono); font-size: 0.72rem; letter-spacing: 1px;
+            color: #b7c1c9; text-align: center; padding: 30px 0;
         }
 
         .message-list li, .device-list li {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 12px 15px;
+            background: var(--bg);
+            padding: 12px 14px;
             margin: 8px 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-radius: 6px;
+            gap: 10px;
+            border-radius: 12px;
             box-sizing: border-box;
-            font-size: 0.95rem;
-            transition: background 0.2s;
+            font-size: 0.9rem;
+            border: 1px solid var(--panel-border);
+            transition: background 0.25s ease, border-color 0.25s ease;
         }
+        .message-list li span:first-child, .device-list li span:first-child { font-family: var(--mono); font-size: 0.82rem; }
 
-        .alert-item { border-right: 4px solid var(--neon-red); color: #fff; }
-        .warning-item { border-right: 4px solid #ffcc00; color: #ffcc00; }
-        .device-online { border-right: 4px solid var(--neon-green); color: var(--neon-green); }
-        .device-warning { border-right: 4px solid #ffcc00; color: #ffcc00; }
-        .device-offline { border-right: 4px solid #444; opacity: 0.6; color: #888; }
+        .alert-item { background: var(--signal-red-bg); border-color: #f6c8c4; color: var(--signal-red); }
+        .warning-item { background: var(--signal-yellow-bg); border-color: #f5dba8; color: var(--signal-yellow); }
+        .device-online { background: var(--signal-green-bg); border-color: #bfe7d2; color: var(--signal-green); }
+        .device-warning { background: var(--signal-yellow-bg); border-color: #f5dba8; color: var(--signal-yellow); }
+        .device-offline { background: var(--offline-bg); border-color: var(--panel-border); opacity: 0.75; color: var(--offline-grey); }
 
         @keyframes pulse-blink {
             0% { filter: brightness(1); }
-            50% { filter: brightness(2); box-shadow: inset 0 0 10px rgba(255,255,255,0.1); }
+            50% { filter: brightness(1.15); box-shadow: 0 0 0 3px rgba(63, 169, 220, 0.25); }
             100% { filter: brightness(1); }
         }
         .blink-active { animation: pulse-blink 0.4s ease-in-out; }
 
-        .settings-icon { cursor: pointer; color: #fff; font-size: 1.2rem; }
+        .settings-icon {
+            cursor: pointer; font-size: 1rem;
+            width: 28px; height: 28px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.6);
+            transition: background 0.2s ease, transform 0.2s ease;
+            flex-shrink: 0;
+        }
+        .settings-icon:hover { background: var(--body-white); transform: rotate(35deg); }
 
+        /* --- SETTINGS PANEL (device faceplate) --- */
         #settings-ui {
             position: fixed;
             top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 95%; max-width: 400px;
-            background: #0a0a14;
-            border: 2px solid var(--neon-blue);
-            padding: 20px;
+            background: var(--body-white);
+            border: 1px solid var(--panel-border);
+            padding: 0 22px 22px;
             z-index: 1000;
             display: none;
-            border-radius: 12px;
+            border-radius: 20px;
             box-sizing: border-box;
             max-height: 90vh;
             overflow-y: auto;
-            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            box-shadow: 0 20px 60px rgba(23, 36, 47, 0.25);
         }
+        .settings-header {
+            margin: 0 -22px 18px; padding: 16px 22px;
+            background: linear-gradient(135deg, var(--gasket), var(--gasket-deep));
+            border-radius: 20px 20px 0 0;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0;
+        }
+        #settings-close {
+            cursor: pointer; color: rgba(255,255,255,0.85);
+            font-family: var(--mono); font-size: 0.8rem; letter-spacing: 1px;
+            transition: color 0.2s ease;
+        }
+        #settings-close:hover { color: #fff; }
+
+        #settings-ui h3 {
+            text-align: left; font-family: var(--sans);
+            color: #fff; letter-spacing: 0.2px; font-size: 1rem; font-weight: 700;
+            margin: 0;
+        }
+
+        .battery-container { width: 90px; height: 10px; background: var(--bg); margin: 6px auto; border: 1px solid var(--panel-border); border-radius: 5px; overflow: hidden; }
+        .battery-level { height: 100%; transition: width 0.3s; }
+        #battery-level-text { font-family: var(--mono); font-size: 0.72rem; color: var(--muted-2); letter-spacing: 1px; }
 
         .pressure-label {
-            background: #000;
-            padding: 15px;
-            margin: 15px 0;
+            background: #0d1b24;
+            border-radius: 12px;
+            padding: 18px;
+            margin: 4px 0 14px;
             display: flex;
             justify-content: space-around;
-            border: 1px solid #333;
-            font-family: 'Orbitron';
+            border: 1px solid #1c3542;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.35);
+        }
+        .pressure-label label { font-family: var(--mono); font-size: 9px; letter-spacing: 2px; color: #6f96a8; }
+        .set-pressure { font-family: var(--mono); color: var(--gasket); font-size: 2rem; text-shadow: 0 0 14px rgba(63, 169, 220, 0.55); }
+        .real-pressure { font-family: var(--mono); color: #d8e6ec; font-size: 1.5rem; opacity: 0.85; }
+
+        .gauge-block { margin-bottom: 18px; }
+        .gauge-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .gauge-row .g-label { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; color: var(--muted-2); width: 34px; flex-shrink: 0; }
+        .gauge-track { flex: 1; height: 7px; background: var(--bg); border-radius: 4px; border: 1px solid var(--panel-border); overflow: hidden; }
+        .gauge-fill { height: 100%; width: 0%; border-radius: 4px; transition: width 0.4s ease; }
+        #gauge-set-fill { background: linear-gradient(90deg, var(--gasket-deep), var(--gasket)); }
+        #gauge-real-fill { background: linear-gradient(90deg, #9aa7b0, #cbd4da); }
+
+        .settings-button {
+            font-family: var(--sans); padding: 13px;
+            border: 1px solid var(--panel-border); cursor: pointer;
+            width: 100%; border-radius: 12px; margin-bottom: 10px;
+            font-weight: 700; letter-spacing: 0.2px; font-size: 0.9rem;
+            transition: filter 0.2s ease, transform 0.1s ease;
+        }
+        .settings-button:active { transform: translateY(1px); }
+        .settings-plus, .settings-minus {
+            background: var(--bg); color: var(--ink); width: 48%; font-size: 1.4rem;
+        }
+        .settings-plus:hover, .settings-minus:hover { background: var(--gasket-pale); }
+        .settings-save { background: linear-gradient(135deg, var(--gasket), var(--gasket-deep)); color: #fff; border: none; }
+        .settings-save:hover { filter: brightness(1.06); }
+
+        .setting-group { margin-bottom: 12px; }
+        .setting-group label {
+            display: block; font-family: var(--mono); font-size: 0.66rem;
+            letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 6px; color: var(--muted-2);
+        }
+        .setting-group select {
+            width: 100%; padding: 10px; background: var(--bg); color: var(--ink);
+            border: 1px solid var(--panel-border); border-radius: 8px; font-size: 0.9rem;
         }
 
-        .set-pressure { color: var(--neon-blue); font-size: 2rem; }
-        .real-pressure { color: #fff; font-size: 1.5rem; opacity: 0.7; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #c7d1d8; border-radius: 4px; }
 
-        .settings-button { font-family: 'Orbitron'; padding: 12px; border: none; cursor: pointer; width: 100%; border-radius: 4px; margin-bottom: 10px; font-weight: bold; }
-        .settings-plus, .settings-minus { background: #333; color: white; width: 48%; font-size: 1.5rem; }
-        .settings-save { background: var(--neon-blue); color: #000; }
-        
-        .setting-group { margin-bottom: 12px; }
-        .setting-group label { display: block; font-size: 0.8rem; margin-bottom: 5px; color: #888; }
-        .setting-group select { width: 100%; padding: 10px; background: #1a1a2e; color: white; border: 1px solid #444; border-radius: 4px; }
+        .foot {
+            text-align: center; color: #9aa7b0; font-family: var(--mono);
+            font-size: 0.65rem; letter-spacing: 1.5px; margin-top: 26px;
+        }
 
-        .battery-container { width: 80px; height: 12px; background: #222; margin: 5px auto; border: 1px solid #444; }
-        .battery-level { height: 100%; transition: width 0.3s; }
+        @media (max-width: 480px) {
+            h1 { font-size: 1.08rem; }
+            .clock { font-size: 0.8rem; padding: 7px 12px; }
+        }
     </style>
 </head>
 <body>
 
     <canvas id="boids-canvas"></canvas>
 
-    <h1>Tiny-VAC // CORE</h1>
-
-    <div class="status-box">
-        <div id="connection-status">CONNECTING...</div>
-        <div id="subscription-status">GROUPS: WAITING</div>
-    </div>
-
-    <div class="dashboard">
-        <div class="alarms">
-            <h2>ALARMS ▼</h2>
-            <ul class="message-list" id="messages"></ul>
+    <div class="app-shell">
+        <div class="topbar">
+            <div class="brand">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#1f6fa8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3v6M12 21v-4M5 12H3M21 12h-2M7 7l1.5 1.5M17 7l-1.5 1.5M7 17l1.5-1.5M17 17l-1.5-1.5"/>
+                        <circle cx="12" cy="12" r="3.4"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1>Tiny-VAC <span>// Core</span></h1>
+                    <div class="brand-sub">Device telemetry &amp; control</div>
+                </div>
+            </div>
+            <div class="clock" id="live-clock">--:--:--</div>
         </div>
 
-        <div class="devices">
-            <h2>DEVICES ▼</h2>
-            <ul class="device-list" id="active-devices"></ul>
+        <div class="status-box">
+            <div class="status-row">
+                <div id="connection-status">CONNECTING...</div>
+                <div id="subscription-status">GROUPS: WAITING</div>
+            </div>
+            <div class="summary-strip" id="summary-strip">
+                <div class="summary-chip online">
+                    <div class="chip-top"><span class="dot"></span><span class="chip-label">Online</span></div>
+                    <span id="count-online">0</span>
+                </div>
+                <div class="summary-chip warning">
+                    <div class="chip-top"><span class="dot"></span><span class="chip-label">Warning</span></div>
+                    <span id="count-warning">0</span>
+                </div>
+                <div class="summary-chip offline">
+                    <div class="chip-top"><span class="dot"></span><span class="chip-label">Offline</span></div>
+                    <span id="count-offline">0</span>
+                </div>
+                <div class="summary-chip alarm">
+                    <div class="chip-top"><span class="dot"></span><span class="chip-label">Alarms logged</span></div>
+                    <span id="count-alarm">0</span>
+                </div>
+            </div>
         </div>
+
+        <div class="dashboard">
+            <div class="alarms">
+                <h2>Alarms</h2>
+                <ul class="message-list" id="messages"></ul>
+            </div>
+
+            <div class="devices">
+                <h2>Devices</h2>
+                <ul class="device-list" id="active-devices"></ul>
+            </div>
+        </div>
+
+        <div class="foot">TINY-VAC CORE · MQTT TELEMETRY CONSOLE</div>
     </div>
 
     <div id="settings-ui">
-        <div id="settings-close" style="float:right; cursor:pointer; color:var(--neon-red);">[X]</div>
-        <h3 style="text-align: center; font-family: 'Orbitron'; color: var(--neon-blue);">SETTINGS</h3>
+        <div class="settings-header">
+            <h3>Device settings</h3>
+            <div id="settings-close">CLOSE ✕</div>
+        </div>
 
         <div id="battery-indicator" style="text-align: center;">
             <div class="battery-container"><div class="battery-level" id="battery-level-display"></div></div>
-            <div style="font-size: 12px;" id="battery-level-text">0%</div>
+            <div id="battery-level-text">0%</div>
         </div>
 
         <div class="pressure-label">
-            <div style="text-align:center;"><label style="display:block; font-size:10px;">SET</label><span class="set-pressure">N/A</span></div>
-            <div style="text-align:center;"><label style="display:block; font-size:10px;">REAL</label><span class="real-pressure">N/A</span></div>
+            <div style="text-align:center;"><label>SET</label><br><span class="set-pressure">N/A</span></div>
+            <div style="text-align:center;"><label>REAL</label><br><span class="real-pressure">N/A</span></div>
+        </div>
+
+        <div class="gauge-block">
+            <div class="gauge-row">
+                <span class="g-label">SET</span>
+                <div class="gauge-track"><div class="gauge-fill" id="gauge-set-fill"></div></div>
+            </div>
+            <div class="gauge-row">
+                <span class="g-label">REAL</span>
+                <div class="gauge-track"><div class="gauge-fill" id="gauge-real-fill"></div></div>
+            </div>
         </div>
 
         <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
@@ -234,12 +450,11 @@
     </div>
 
     <script>
-        /** --- BOIDS ENGINE (SUBTLE CYBER WEB) --- **/
+        /** --- AMBIENT BACKGROUND (calm, non-distracting — decorative only) --- **/
         const canvas = document.getElementById('boids-canvas');
         const ctx = canvas.getContext('2d');
-        let boids = [];
-        const numBoids = 60;
-        const maxDist = 120;
+        let dots = [];
+        const numDots = 26;
 
         function resize() {
             canvas.width = window.innerWidth;
@@ -248,47 +463,33 @@
         window.addEventListener('resize', resize);
         resize();
 
-        class Boid {
+        class Dot {
             constructor() {
-                this.position = { x: Math.random() * canvas.width, y: Math.random() * canvas.height };
-                this.velocity = { x: (Math.random() - 0.5) * 1.2, y: (Math.random() - 0.5) * 1.2 };
-            }
-            draw() {
-                ctx.fillStyle = "rgba(0, 242, 255, 0.2)";
-                ctx.beginPath(); ctx.arc(this.position.x, this.position.y, 1.5, 0, Math.PI * 2); ctx.fill();
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 0.15;
+                this.vy = (Math.random() - 0.5) * 0.15;
+                this.r = 1 + Math.random() * 1.6;
             }
             update() {
-                this.position.x += this.velocity.x;
-                this.position.y += this.velocity.y;
-                if (this.position.x > canvas.width) this.position.x = 0;
-                if (this.position.x < 0) this.position.x = canvas.width;
-                if (this.position.y > canvas.height) this.position.y = 0;
-                if (this.position.y < 0) this.position.y = canvas.height;
+                this.x += this.vx; this.y += this.vy;
+                if (this.x < 0) this.x = canvas.width;
+                if (this.x > canvas.width) this.x = 0;
+                if (this.y < 0) this.y = canvas.height;
+                if (this.y > canvas.height) this.y = 0;
             }
-            connect(boids) {
-                for (let other of boids) {
-                    let d = Math.sqrt((this.position.x - other.position.x)**2 + (this.position.y - other.position.y)**2);
-                    if (other != this && d < maxDist) {
-                        ctx.strokeStyle = `rgba(0, 242, 255, ${(1 - d/maxDist) * 0.15})`;
-                        ctx.lineWidth = 0.5;
-                        ctx.beginPath();
-                        ctx.moveTo(this.position.x, this.position.y);
-                        ctx.lineTo(other.position.x, other.position.y);
-                        ctx.stroke();
-                    }
-                }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(63, 169, 220, 0.14)';
+                ctx.fill();
             }
         }
-
-        for (let i = 0; i < numBoids; i++) boids.push(new Boid());
+        for (let i = 0; i < numDots; i++) dots.push(new Dot());
 
         function animate() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            for (let boid of boids) {
-                boid.connect(boids);
-                boid.update();
-                boid.draw();
-            }
+            for (let d of dots) { d.update(); d.draw(); }
             requestAnimationFrame(animate);
         }
         animate();
@@ -467,6 +668,52 @@
         }, 5000);
 
         connectMQTT();
+    </script>
+
+    <script>
+        /** --- ADDITIVE UI ENHANCEMENTS (read-only observers, do not touch MQTT logic above) --- **/
+
+        // Live clock
+        function tickClock() {
+            const now = new Date();
+            document.getElementById('live-clock').textContent = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        }
+        tickClock();
+        setInterval(tickClock, 1000);
+
+        // Fleet summary strip — recounts device/alarm classes whenever the lists change
+        function refreshSummary() {
+            const items = document.querySelectorAll('#active-devices li');
+            let online = 0, warning = 0, offline = 0;
+            items.forEach(li => {
+                if (li.classList.contains('device-online')) online++;
+                else if (li.classList.contains('device-warning')) warning++;
+                else if (li.classList.contains('device-offline')) offline++;
+            });
+            document.getElementById('count-online').textContent = online;
+            document.getElementById('count-warning').textContent = warning;
+            document.getElementById('count-offline').textContent = offline;
+            document.getElementById('count-alarm').textContent = document.querySelectorAll('#messages .alert-item').length;
+        }
+        const devicesEl = document.getElementById('active-devices');
+        const messagesEl = document.getElementById('messages');
+        new MutationObserver(refreshSummary).observe(devicesEl, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+        new MutationObserver(refreshSummary).observe(messagesEl, { childList: true });
+        refreshSummary();
+
+        // Pressure gauges — mirror the SET / REAL readouts as fill bars
+        const maxScale = 300;
+        function refreshGauges() {
+            const setVal = parseInt(document.querySelector('.set-pressure').textContent) || 0;
+            const realVal = parseInt(document.querySelector('.real-pressure').textContent) || 0;
+            document.getElementById('gauge-set-fill').style.width = Math.min(100, (setVal / maxScale) * 100) + '%';
+            document.getElementById('gauge-real-fill').style.width = Math.min(100, (realVal / maxScale) * 100) + '%';
+        }
+        const setEl = document.querySelector('.set-pressure');
+        const realEl = document.querySelector('.real-pressure');
+        new MutationObserver(refreshGauges).observe(setEl, { childList: true, characterData: true, subtree: true });
+        new MutationObserver(refreshGauges).observe(realEl, { childList: true, characterData: true, subtree: true });
+        refreshGauges();
     </script>
 </body>
 </html>

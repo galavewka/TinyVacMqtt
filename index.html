@@ -30,8 +30,6 @@
             --offline-bg: #f0f3f5;
             --mono: 'IBM Plex Mono', monospace;
             --sans: 'Inter', sans-serif;
-
-            /* legacy aliases — the original MQTT script sets colors via these var names directly */
             --neon-blue: var(--gasket-deep);
             --neon-green: var(--signal-green);
             --neon-red: var(--signal-red);
@@ -65,7 +63,6 @@
 
         .app-shell { width: 100%; max-width: 1100px; }
 
-        /* --- TOPBAR --- */
         .topbar {
             display: flex; justify-content: space-between; align-items: center;
             padding: 4px 4px 20px;
@@ -102,7 +99,6 @@
             box-shadow: 0 1px 3px rgba(23, 36, 47, 0.06);
         }
 
-        /* --- STATUS BOX --- */
         .status-box {
             width: 100%;
             background: var(--panel);
@@ -145,7 +141,6 @@
         .summary-chip.offline .dot { background: var(--offline-grey); }
         .summary-chip.alarm .dot { background: var(--signal-red); }
 
-        /* --- DASHBOARD GRID --- */
         .dashboard {
             display: flex; flex-direction: column; gap: 18px;
             width: 100%;
@@ -229,7 +224,6 @@
         }
         .settings-icon:hover { background: var(--body-white); transform: rotate(35deg); }
 
-        /* --- SETTINGS PANEL (device faceplate) --- */
         #settings-ui {
             position: fixed;
             top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -450,7 +444,6 @@
     </div>
 
     <script>
-        /** --- AMBIENT BACKGROUND (calm, non-distracting — decorative only) --- **/
         const canvas = document.getElementById('boids-canvas');
         const ctx = canvas.getContext('2d');
         let dots = [];
@@ -494,7 +487,6 @@
         }
         animate();
 
-        /** --- YOUR ORIGINAL JS LOGIC - UNTOUCHED --- **/
         let client;
         let deviceHeartbeats = {};
         let currentDevice = "";
@@ -508,6 +500,18 @@
         const password = getUrlParam("password");
         const topics = getUrlParam("topics") ? getUrlParam("topics").split(",") : [];
         const brokerUrl = "wss://tinyvacmqtt188.cloud.shiftr.io";
+
+        const tgUser = getUrlParam("tgUser");
+        const tgName = getUrlParam("tgName");
+
+        if (!tgUser || !tgName) {
+            document.body.innerHTML = `
+                <div style="text-align: center; margin-top: 20vh; font-family: var(--sans);">
+                    <h2 style="color: var(--signal-red);">Access Denied</h2>
+                    <p>Please use the Telegram bot to get your dashboard link.</p>
+                </div>`;
+            throw new Error("Missing Telegram User ID - stopping execution.");
+        }
 
         function connectMQTT() {
             client = mqtt.connect(brokerUrl, { username, password });
@@ -551,7 +555,6 @@
 
                 updateUI(deviceName, parsed);
 
-                // UI NODE LOGIC
                 if (batteryLevel !== "N/A" && status !== "Unknown") {
                     let deviceText = `${deviceName} ${batteryLevel}% | Status: ${status}`;
                     let icon = `<span class="settings-icon" onclick="openSettings('${deviceName}')">⚙️</span>`;
@@ -565,12 +568,10 @@
                         deviceElement = $(`#${deviceName}`);
                     }
                     
-                    // BLINK TRIGGER
                     deviceElement.addClass("blink-active");
                     setTimeout(() => deviceElement.removeClass("blink-active"), 400);
                 }
 
-                // UNIFIED ALERTS LIST LOGIC
                 if (type === "Alarm" || type === "Warning") {
                     let alertClass = type === "Alarm" ? "alert-item" : "warning-item";
                     $("#messages").prepend(`
@@ -637,7 +638,8 @@
                     deviceName: currentDevice, command: "updateSettings", therapyEnabled: newState,
                     setPressure: parseInt($(".set-pressure").text()),
                     leakAlarm: $("#leak-alarm").val(), canisterFull: $("#canister-full").val(), blockage: $("#blockage").val(),
-                    soundAlarm: $("#sound-alarm").val(), batteryAlarm: $("#battery-alarm").val()
+                    soundAlarm: $("#sound-alarm").val(), batteryAlarm: $("#battery-alarm").val(),
+                    tgUser: tgUser, tgName: tgName 
                 });
                 client.publish(`${info.deviceTopic}/${currentDevice}/settings`, payload);
                 info.therapyEnabled = newState;
@@ -651,7 +653,8 @@
                 const alarmStr = [$("#leak-alarm").prop('selectedIndex'), $("#canister-full").prop('selectedIndex'), $("#blockage").prop('selectedIndex'), $("#sound-alarm").prop('selectedIndex'), $("#battery-alarm").prop('selectedIndex')].join("");
                 const payload = JSON.stringify({
                     deviceName: currentDevice, command: "updateSettings",
-                    setPressure: parseInt($(".set-pressure").text()), therapyEnabled: info.therapyEnabled, alarmSettings: alarmStr
+                    setPressure: parseInt($(".set-pressure").text()), therapyEnabled: info.therapyEnabled, alarmSettings: alarmStr,
+                    tgUser: tgUser, tgName: tgName 
                 });
                 client.publish(`${info.deviceTopic}/${currentDevice}/settings`, payload);
                 $("#settings-ui").fadeOut(200);
@@ -671,9 +674,6 @@
     </script>
 
     <script>
-        /** --- ADDITIVE UI ENHANCEMENTS (read-only observers, do not touch MQTT logic above) --- **/
-
-        // Live clock
         function tickClock() {
             const now = new Date();
             document.getElementById('live-clock').textContent = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
@@ -681,7 +681,6 @@
         tickClock();
         setInterval(tickClock, 1000);
 
-        // Fleet summary strip — recounts device/alarm classes whenever the lists change
         function refreshSummary() {
             const items = document.querySelectorAll('#active-devices li');
             let online = 0, warning = 0, offline = 0;
@@ -701,7 +700,6 @@
         new MutationObserver(refreshSummary).observe(messagesEl, { childList: true });
         refreshSummary();
 
-        // Pressure gauges — mirror the SET / REAL readouts as fill bars
         const maxScale = 300;
         function refreshGauges() {
             const setVal = parseInt(document.querySelector('.set-pressure').textContent) || 0;
